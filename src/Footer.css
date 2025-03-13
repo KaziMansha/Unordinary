@@ -1,0 +1,49 @@
+/* Footer Styling */
+.footer {
+    background-color: #869ab0;
+    color: white;
+    text-align: center;
+    padding: 16px 0;
+    position: absolute; /* or fixed if you want it always visible */
+    bottom: 0;
+    left: 0;       /* Ensure the footer starts at the very left */
+    right: 0;      /* and ends at the very right */
+    width: 100%;   /* Let the footer use 100% of the screen width */
+    box-sizing: border-box; /* Ensures padding doesn't add extra width */
+  }
+  
+  .footer-container {
+    max-width: auto;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Footer Text */
+  .footer-text {
+    font-size: 1rem;
+    margin-bottom: 8px;
+  }
+  
+  /* Footer Links */
+  .footer-links {
+    list-style: none;
+    display: flex;
+    gap: 16px;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .footer-link {
+    text-decoration: none;
+    color: white;
+    font-size: 0.9rem;
+    transition: color 0.3s ease-in-out;
+  }
+  
+  .footer-link:hover {
+    color: #ffdd57;
+  }
+  
