@@ -1,14 +1,20 @@
+// /src/App.tsx
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-import AuthForm from './components/AuthForm';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { MantineProvider } from '@mantine/core';
+import AuthPage from './components/Authform';
 import HomePage from './components/HomePage';
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<AuthForm />} />
-      <Route path="/home" element={<HomePage />} />
-    </Routes>
+    <MantineProvider withGlobalStyles withNormalizeCSS>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<AuthPage />} />
+          <Route path="/home" element={<HomePage />} />
+        </Routes>
+      </BrowserRouter>
+    </MantineProvider>
   );
 }
 
