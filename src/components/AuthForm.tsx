@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
+import './AuthForm.css';
 import {
   TextInput,
   PasswordInput,
   Button,
-  Group,
   Paper,
   Title,
   Divider,
@@ -45,8 +45,7 @@ const AuthForm: React.FC = () => {
       } else {
         await signInWithEmailAndPassword(auth, email, password);
       }
-      // Redirect on successful authentication
-      navigate('/home'); // Adjust the route to your homepage route
+      navigate('/home');
     } catch (error: any) {
       console.error('Authentication error', error.message);
     }
@@ -55,64 +54,77 @@ const AuthForm: React.FC = () => {
   const handleGoogleSignIn = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
-      // Redirect on successful authentication
-      navigate('/home'); // Adjust the route to your homepage route
+      navigate('/home');
     } catch (error: any) {
       console.error('Google sign in error', error.message);
     }
   };
 
   return (
-    <Paper
-      radius="md"
-      p="xl"
-      withBorder
-      style={{ maxWidth: 400, margin: '2rem auto' }}
-    >
-      <Title style={{ textAlign: 'center' }} mb="lg">
-        {isSignUp ? 'Sign Up' : 'Sign In'}
-      </Title>
-      <form onSubmit={form.onSubmit(handleEmailAuth)}>
-        <TextInput
-          label="Email"
-          placeholder="you@example.com"
-          required
-          {...form.getInputProps('email')}
-        />
-        <PasswordInput
-          label="Password"
-          placeholder="Your password"
-          required
-          mt="md"
-          {...form.getInputProps('password')}
-        />
-        {isSignUp && (
+    <div className="auth-form-wrapper">
+      <Paper radius="md" p="xl" withBorder>
+        <Title style={{ textAlign: 'center' }} mb="lg">
+          {isSignUp ? 'Sign Up' : 'Sign In'}
+        </Title>
+
+        <form onSubmit={form.onSubmit(handleEmailAuth)}>
+          {/* 
+            Add a custom class to style the text inputs via CSS.
+            This class will target Mantine's label and input elements.
+          */}
+          <TextInput
+            className="custom-text-input"
+            label="Email"
+            placeholder="you@example.com"
+            required
+            {...form.getInputProps('email')}
+          />
           <PasswordInput
-            label="Confirm Password"
-            placeholder="Confirm password"
+            className="custom-text-input"
+            label="Password"
+            placeholder="Your password"
             required
             mt="md"
-            {...form.getInputProps('confirmPassword')}
+            {...form.getInputProps('password')}
           />
-        )}
-        <Group style={{ justifyContent: 'space-between' }} mt="md">
-          <Button type="submit">
-            {isSignUp ? 'Sign Up' : 'Sign In'}
+          {isSignUp && (
+            <PasswordInput
+              className="custom-text-input"
+              label="Confirm Password"
+              placeholder="Confirm password"
+              required
+              mt="md"
+              {...form.getInputProps('confirmPassword')}
+            />
+          )}
+
+          <div className="auth-form-buttons">
+            <Button type="submit" className="auth-button">
+              {isSignUp ? 'Sign Up' : 'Sign In'}
+            </Button>
+            <Button className="auth-button" onClick={handleGoogleSignIn}>
+              Sign in with Google
+            </Button>
+          </div>
+        </form>
+
+        <div className="auth-divider">
+          <Divider my="lg" label="Or continue with" labelPosition="center" />
+        </div>
+
+        <Center>
+          <Button
+            className="auth-button"
+            variant="light"
+            onClick={() => setIsSignUp(!isSignUp)}
+          >
+            {isSignUp
+              ? 'Already have an account? Sign In'
+              : "Don't have an account? Sign Up"}
           </Button>
-          <Button variant="default" onClick={handleGoogleSignIn}>
-            Sign in with Google
-          </Button>
-        </Group>
-      </form>
-      <Divider my="lg" label="Or continue with" labelPosition="center" />
-      <Center>
-        <Button variant="light" onClick={() => setIsSignUp(!isSignUp)}>
-          {isSignUp
-            ? 'Already have an account? Sign In'
-            : "Don't have an account? Sign Up"}
-        </Button>
-      </Center>
-    </Paper>
+        </Center>
+      </Paper>
+    </div>
   );
 };
 

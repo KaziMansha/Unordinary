@@ -37,7 +37,7 @@ body {
 .auth-button {
   width: 100%;                /* Fill the container width */
   border: 1px solid #ccc;     /* Light-gray border */
-  background-color: #2596ff;  /* Light background color */
+  background-color: #2596ff;  /* Light background color */ 
   color: white;
   cursor: pointer;
   padding: 0.6em 1.2em;
