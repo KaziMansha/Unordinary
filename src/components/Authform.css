@@ -1,0 +1,114 @@
+/* Reset page defaults and ensure it fills the viewport */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Center the form on a white background */
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff;
+}
+
+/* Outer wrapper that encloses the Paper (or entire form) */
+.auth-form-wrapper {
+  border: 2px solid #000; /* Black border around the form area */
+  padding: 2rem;
+  box-sizing: border-box;
+}
+
+/* 
+  Container for the two main buttons (Sign In/Sign Up and Google).
+  Stacks them vertically with a gap.
+*/
+.auth-form-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch; /* Make each button fill the container's width */
+  gap: 1rem;           /* Vertical spacing between buttons */
+  margin-top: 1rem;
+}
+
+/* Common style for your buttons (border, background, etc.). */
+.auth-button {
+  width: 100%;                /* Fill the container width */
+  border: 1px solid #ccc;     /* Light-gray border */
+  background-color: #2596ff;  /* Light background color */
+  color: white;
+  cursor: pointer;
+  padding: 0.6em 1.2em;
+  border-radius: 4px;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  transition: border-color 0.25s;
+}
+
+/* Hover/focus states for the buttons */
+.auth-button:hover {
+  border-color: #000000;
+}
+.auth-button:focus,
+.auth-button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+.auth-divider {
+  text-align: center;
+  margin: 5px;
+}
+
+/* 
+  -------------
+  STYLING TEXTBOXES
+  -------------
+  Mantine typically renders something like:
+    <div class="mantine-TextInput-root custom-text-input">
+      <label class="mantine-TextInput-label">Label</label>
+      <div class="mantine-TextInput-wrapper">
+        <input class="mantine-TextInput-input" ... />
+      </div>
+    </div>
+*/
+
+/* Make the label stand out a bit */
+.custom-text-input .mantine-Input-label {
+  font-weight: bold;
+  color: #444;
+}
+
+/* Style the input field itself */
+.custom-text-input .mantine-Input-input {
+  border: 1px solid #ccc !important;  /* Use !important to override Mantine defaults */
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-family: inherit;
+  /* For a consistent transition effect, you can add: */
+  transition: border-color 0.25s;
+}
+
+.mantine-TextInput-input,
+.mantine-PasswordInput-input {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  font-size: 1rem;
+  font-family: inherit;
+  width: 93%;
+  padding: 0.4rem; /* adjust for your taste; ensures there's space inside the wrapper */
+}
+
+
+/* On focus/hover, change the input's border color */
+.custom-text-input .mantine-Input-input:hover {
+  border-color: #999 !important;
+}
+.custom-text-input .mantine-Input-input:focus {
+  outline: none !important;
+  border-color: #646cff !important; /* Slight highlight on focus */
+}
