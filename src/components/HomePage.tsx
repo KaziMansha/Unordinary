@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import './HomePage.css';  // <-- Import the CSS file
 import { Container, Title, Text, Button, Center } from '@mantine/core';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase-config';
@@ -34,18 +35,14 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <Container size="sm" style={{ marginTop: '3rem' }}>
+    <Container size="sm" className="homepage-container">
       <Center>
-        <Title style={{ textAlign: 'center' }} mb="md">
-          Welcome to Your Homepage
-        </Title>
+        <Title className="homepage-title">Welcome to Your Homepage</Title>
       </Center>
       <Center>
-        <Text style={{ textAlign: 'center' }} mb="xl">
-          Hello, {user.email}
-        </Text>
+        <Text className="homepage-text">Hello, {user.email}</Text>
       </Center>
-      <Button fullWidth mt="xl" onClick={handleSignOut}>
+      <Button className="homepage-button" onClick={handleSignOut}>
         Sign Out
       </Button>
     </Container>
