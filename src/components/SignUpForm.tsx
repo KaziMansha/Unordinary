@@ -70,6 +70,7 @@ const SignUpForm: React.FC = () => {
             mt="md"
             {...form.getInputProps('confirmPassword')}
           />
+          <hr style = {{margin: '10px 0'}} />
           <div className="auth-form-buttons">
             <Button type="submit" className="auth-button">
               Sign Up
