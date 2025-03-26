@@ -12,43 +12,85 @@ body {
   align-items: center;
   justify-content: center;
   background-color: #ffffff;
+  background: url(src/assets/background.jpg) no-repeat center center fixed;
 }
 
-/* Outer wrapper that encloses the Paper (or entire form) */
 .auth-form-wrapper {
-  border: 2px solid #000; /* Black border around the form area */
+  border: 1px solid #000;
   padding: 2rem;
+  width: 500px;           
   box-sizing: border-box;
+  border-radius: 8px;     /* Rounded corners for the box itself (optional) */
+  background-color: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 10);
 }
 
-/* 
-  Container for the two main buttons (Sign In/Sign Up and Google).
-  Stacks them vertically with a gap.
-*/
+/* Divider text styling */
+.auth-divider {
+  text-align: center;
+  margin: 5px;
+}
+
+.custom-text-input {
+  font-weight: bold;
+  color: #444;
+}
+
+.mantine-Input-input {
+  border: 1px solid #ccc !important; 
+  padding: 0.5rem;
+  border-radius: 4px; 
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 0.25s;
+  width: 96%
+}
+
+.mantine-PasswordInput-innerInput {
+  border: 1px solid #ccc !important; 
+  padding: 0rem;
+  border: 0px !important;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 0.25s;
+}
+
+
+.mantine-Input-input:hover, .mantine-PasswordInput-innerInput:hover{
+  border-color: #999 !important;
+}
+.mantine-Input-input:focus, .mantine-PasswordInput-innerInput:focus {
+  outline: none !important;
+  border-color: #646cff !important; /* highlight on focus */
+}
+
+
 .auth-form-buttons {
   display: flex;
   flex-direction: column;
-  align-items: stretch; /* Make each button fill the container's width */
-  gap: 1rem;           /* Vertical spacing between buttons */
+  align-items: stretch;
+  gap: 1rem;
   margin-top: 1rem;
 }
 
-/* Common style for your buttons (border, background, etc.). */
+/* 
+  Give each button larger corner rounding
+  so they appear more curved
+*/
 .auth-button {
-  width: 100%;                /* Fill the container width */
-  border: 1px solid #ccc;     /* Light-gray border */
-  background-color: #2596ff;  /* Light background color */ 
+  width: 100%;
+  border: 1px solid #ccc;
+  background-color: #c45fff;
   color: white;
   cursor: pointer;
   padding: 0.6em 1.2em;
-  border-radius: 4px;
+  border-radius: 12px; /* <--- More rounded corners */
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
   transition: border-color 0.25s;
 }
 
-/* Hover/focus states for the buttons */
 .auth-button:hover {
   border-color: #000000;
 }
@@ -57,58 +99,3 @@ body {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-.auth-divider {
-  text-align: center;
-  margin: 5px;
-}
-
-/* 
-  -------------
-  STYLING TEXTBOXES
-  -------------
-  Mantine typically renders something like:
-    <div class="mantine-TextInput-root custom-text-input">
-      <label class="mantine-TextInput-label">Label</label>
-      <div class="mantine-TextInput-wrapper">
-        <input class="mantine-TextInput-input" ... />
-      </div>
-    </div>
-*/
-
-/* Make the label stand out a bit */
-.custom-text-input .mantine-Input-label {
-  font-weight: bold;
-  color: #444;
-}
-
-/* Style the input field itself */
-.custom-text-input .mantine-Input-input {
-  border: 1px solid #ccc !important;  /* Use !important to override Mantine defaults */
-  padding: 0.5rem;
-  border-radius: 4px;
-  font-size: 1rem;
-  font-family: inherit;
-  /* For a consistent transition effect, you can add: */
-  transition: border-color 0.25s;
-}
-
-.mantine-TextInput-input,
-.mantine-PasswordInput-input {
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-  font-size: 1rem;
-  font-family: inherit;
-  width: 93%;
-  padding: 0.4rem; /* adjust for your taste; ensures there's space inside the wrapper */
-}
-
-
-/* On focus/hover, change the input's border color */
-.custom-text-input .mantine-Input-input:hover {
-  border-color: #999 !important;
-}
-.custom-text-input .mantine-Input-input:focus {
-  outline: none !important;
-  border-color: #646cff !important; /* Slight highlight on focus */
-}

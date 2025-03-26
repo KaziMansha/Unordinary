@@ -57,9 +57,9 @@ const SignInForm: React.FC = () => {
             label="Password"
             placeholder="Your password"
             required
-            mt="md"
             {...form.getInputProps('password')}
           />
+          <hr style = {{margin: '10px 0'}} />
           <div className="auth-form-buttons">
             <Button type="submit" className="auth-button">
               Sign In
