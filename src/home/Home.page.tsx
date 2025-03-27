@@ -1,9 +1,9 @@
+import { Hero } from './components/Hero/Hero'
+
 export function HomePage() {
     return (
         <>
-        <h1>
-            Temp Code
-        </h1>
+        <Hero />
         </>
     )
 }
