@@ -1,0 +1,63 @@
+/* Basic reset */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  /* If you want the homepage to occupy the full screen height, you can do: 
+  height: 100%; 
+  */
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+/* A container style for the main content */
+.homepage-container {
+  /* Mantine sets Container width by the "size" prop (in your code, size="sm").
+     So just add some extra styling here. */
+  margin-top: 3rem;       /* Overwrite the inline style if you like */
+  padding: 2rem;
+  border: 2px solid #000; /* Example: A black border around the container */
+  border-radius: 8px;     /* Rounded corners */
+  background-color: #fafafa;
+  box-sizing: border-box;
+  text-align: center;     /* Make text centered by default */
+}
+
+/* Title styling */
+.homepage-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  text-align: center;     /* Redundant if container is text-align: center, but OK */
+}
+
+/* Regular text styling */
+.homepage-text {
+  font-size: 1rem;
+  color: #333;
+  margin-bottom: 2rem;
+}
+
+/* Button styling */
+.homepage-button {
+  width: 100%;                /* Full width button */
+  background-color: #8faee3;  /* Light-blue background */
+  border: 1px solid #ccc;     /* Light-gray border */
+  cursor: pointer;
+  padding: 0.6em 1.2em;
+  border-radius: 4px;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.homepage-button:hover {
+  border-color: #999;
+  background-color: #7a99cc;  /* Slightly darker on hover */
+}
+
+/* Optional: focus outlines for accessibility */
+.homepage-button:focus,
+.homepage-button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
