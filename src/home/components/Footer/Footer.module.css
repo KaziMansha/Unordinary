@@ -6,7 +6,7 @@
     display: flex;
     justify-content: center;
     border-top: 2px solid #f1f1f1; /* matches navbar style */
-    position: fixed;
+    position: relative;
     bottom: 0;
     left: 0;
     right: 0;

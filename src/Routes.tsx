@@ -1,5 +1,5 @@
 // Import all routes in here so we can have client-side routing
-import { HomePage } from './home/Home.page.tsx' 
+import { HomePage } from './home/Home.tsx' 
 
 export const Routes = [
     {
