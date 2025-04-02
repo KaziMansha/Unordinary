@@ -3,6 +3,7 @@ import axios from 'axios';
 
 const GoogleCalendar = () => {
   const [events, setEvents] = useState<any[]>([]);
+  const [freeSlots, setFreeSlots] = useState<any[]>([]);
   const accessToken = localStorage.getItem('access_token');
 
   useEffect(() => {
@@ -16,7 +17,9 @@ const GoogleCalendar = () => {
         const response = await axios.get('http://localhost:5000/api/events', {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
-        setEvents(response.data);
+
+        setEvents(response.data.events);
+        setFreeSlots(response.data.freeSlots);
       } catch (error) {
         console.error('Error fetching events:', error);
       }
@@ -32,11 +35,24 @@ const GoogleCalendar = () => {
         {events.length > 0 ? (
           events.map((event) => (
             <li key={event.id}>
-              {event.summary} - {event.start?.dateTime || event.start?.date}
+              {event.summary} - {new Date(event.start).toLocaleString()}
             </li>
           ))
         ) : (
           <p>No events found.</p>
+        )}
+      </ul>
+
+      <h2>Available Free Time Slots</h2>
+      <ul>
+        {freeSlots.length > 0 ? (
+          freeSlots.map((slot, index) => (
+            <li key={index}>
+              Free from {new Date(slot.start).toLocaleTimeString()} to {new Date(slot.end).toLocaleTimeString()} ({slot.duration} min)
+            </li>
+          ))
+        ) : (
+          <p>No free slots available.</p>
         )}
       </ul>
     </div>

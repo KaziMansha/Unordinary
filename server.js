@@ -59,7 +59,33 @@ app.get('/api/events', async (req, res) => {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 
-    res.json(response.data.items);
+    let events = response.data.items
+      .filter(event => event.start && event.start.dateTime) // Ensure events have a start time
+      .map(event => ({
+        id: event.id,
+        summary: event.summary,
+        start: new Date(event.start.dateTime),
+        end: new Date(event.end.dateTime),
+      }))
+      .sort((a, b) => a.start - b.start); // Sort events by start time
+
+    // Find free time slots (15 min gaps)
+    let freeSlots = [];
+    for (let i = 0; i < events.length - 1; i++) {
+      let endCurrent = events[i].end;
+      let startNext = events[i + 1].start;
+
+      let gap = (startNext - endCurrent) / (1000 * 60); // Convert to minutes
+      if (gap >= 15) {
+        freeSlots.push({
+          start: endCurrent,
+          end: startNext,
+          duration: gap,
+        });
+      }
+    }
+
+    res.json({ events, freeSlots });
   } catch (error) {
     console.error('Error fetching events:', error);
     res.status(500).send('Error fetching events');
