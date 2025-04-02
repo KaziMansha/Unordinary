@@ -1,10 +1,11 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { MantineProvider } from '@mantine/core';
-import AuthPage from './components/AuthForm';  // This file toggles between SignInForm and SignUpForm
-import WelcomePage from './home/Home';           // This is your welcome page (Hero, Navbar, Footer)
-import HomePage from './components/HomePage.tsx';               // This is the authenticated user's dashboard
-import DashboardPage from './dashboard/Dashboard';
+import AuthPage from './components/AuthForm';  // Auth forms
+import WelcomePage from './home/Home';           // Welcome page
+import HomePage from './components/HomePage.tsx';  // Authenticated user's homepage
+import DashboardPage from './dashboard/Dashboard'; // Dashboard with Calendar and Survey (if desired)
+import HobbySurvey from './dashboard/components/HobbySurvey/HobbySurvey.tsx'; // New dedicated survey page
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
           <Route path="/" element={<WelcomePage />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/hobbiesurvey" element={<HobbySurvey />} />
         </Routes>
       </BrowserRouter>
     </MantineProvider>

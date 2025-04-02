@@ -24,17 +24,46 @@ const SignUpForm: React.FC = () => {
   const handleEmailAuth = async () => {
     const { email, password } = form.values;
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      navigate('/home');
+      // Create the user with Firebase
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+  
+      // Retrieve the Firebase ID token
+      const idToken = await user.getIdToken();
+  
+      // Upsert user data and log the response
+      const response = await fetch('http://localhost:5000/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+        },
+      });
+      const data = await response.json();
+      console.log('User upserted:', data);
+  
+      // Navigate to the hobby survey page
+      navigate('/hobbiesurvey');
     } catch (error: any) {
       console.error('Sign up error:', error.message);
     }
   };
+  
 
   const handleGoogleSignIn = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
-      navigate('/home');
+      const userCredential = await signInWithPopup(auth, googleProvider);
+      const user = userCredential.user;
+      const idToken = await user.getIdToken();
+      await fetch('http://localhost:5000/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+        },
+      });
+      // For Google sign in, you may also want to send new users to the hobby survey.
+      navigate('/hobbiesurvey');
     } catch (error: any) {
       console.error('Google sign in error:', error.message);
     }
