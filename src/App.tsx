@@ -6,6 +6,7 @@ import WelcomePage from './home/Home';           // Welcome page
 import HomePage from './components/HomePage.tsx';  // Authenticated user's homepage
 import DashboardPage from './dashboard/Dashboard'; // Dashboard with Calendar and Survey (if desired)
 import HobbySurvey from './dashboard/components/HobbySurvey/HobbySurvey.tsx'; // New dedicated survey page
+import HobbySuggestion from './dashboard/components/HobbySuggestion/HobbySuggestion';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route path="/home" element={<HomePage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/hobbiesurvey" element={<HobbySurvey />} />
+          <Route path="/hobbysuggestion" element={<HobbySuggestion />} />
         </Routes>
       </BrowserRouter>
     </MantineProvider>
