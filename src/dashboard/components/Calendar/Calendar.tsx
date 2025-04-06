@@ -1,12 +1,13 @@
 // Calendar.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { auth } from '../../../firebase-config.ts'; // Adjust path as needed
 import './Calendar.css';
-//import HobbySuggestion from 'C:/Users/Hanz/Documents/GitHub/Unordinary/src/dashboard/components/HobbySuggestion/HobbySuggestion.tsx'; // adjust the path if needed
 
 export function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   type CalendarEvent = {
+    id: number;
     day: number;
     month: number;
     year: number;
@@ -19,6 +20,33 @@ export function Calendar() {
   const [showForm, setShowForm] = useState(false);
   const [titleInput, setTitleInput] = useState('');
   const [timeInput, setTimeInput] = useState('');
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        console.log('[Calendar] Attempting to fetch events...');
+        const idToken = await auth.currentUser?.getIdToken();
+        if (!idToken) return;
+    
+        const response = await fetch('http://localhost:5000/api/events', {
+          headers: {
+            'Authorization': `Bearer ${idToken}`,
+          },
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch events');
+        
+        const data = await response.json();
+        console.log('[Calendar] Successfully fetched events:', data);
+        setEvents(data);
+      } catch (error) {
+        console.error('[Calendar] Error fetching events:', error);
+      }
+    };
+
+    fetchEvents();
+  }, []);
+
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth(); // 0-indexed
@@ -49,34 +77,81 @@ export function Calendar() {
     setShowForm(true);
   };
 
-  const addEvent = () => {
+   // Update addEvent to be async
+   const addEvent = async () => {
     if (selectedDay && titleInput) {
-      const newEvent: CalendarEvent = {
+      console.log('[Calendar] Attempting to add event:', { //testing to see if the bloody event is being added(ts pmo)
+        day: selectedDay, 
+        month, 
+        year, 
+        title: titleInput, 
+        time: timeInput 
+      });
+      const newEvent = {
         day: selectedDay,
         month,
         year,
         title: titleInput,
         time: timeInput,
       };
-      setEvents([...events, newEvent]);
-      setTitleInput('');
-      setTimeInput('');
-      setShowForm(false);
+
+      try {
+        const idToken = await auth.currentUser?.getIdToken();
+        if (!idToken) {
+          console.error('No user logged in');
+          return;
+        }
+
+        const response = await fetch('http://localhost:5000/api/events', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`,
+          },
+          body: JSON.stringify(newEvent),
+        });
+
+        if (!response.ok) throw new Error('Failed to save event');
+        
+        const savedEvent = await response.json();
+        console.log('[Calendar] Event successfully saved to backend:', savedEvent); //is da even being saveD?
+        setEvents([...events, savedEvent]);
+        
+        // Reset form
+        console.log('[Calendar] Clearing form inputs');
+        setTitleInput('');
+        setTimeInput('');
+        setShowForm(false);
+      } catch (error) {
+        console.error('Error adding event:', error);
+      }
     }
   };
 
-  const deleteEvent = (day: number, time: string, title: string) => {
-    const filtered = events.filter(
-      (event) =>
-        !(
-          event.day === day &&
-          event.time === time &&
-          event.title === title &&
-          event.month === month &&
-          event.year === year
-        )
-    );
-    setEvents(filtered);
+  // Update deleteEvent to use event ID
+  const deleteEvent = async (eventId: number) => {
+    console.log('[Calendar] Attempting to delete event ID:', eventId); //checking event itd 
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      if (!idToken) {
+        console.error('No user logged in');
+        return;
+      }
+
+      const response = await fetch(`http://localhost:5000/api/events/${eventId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+        },
+      });
+
+      if (!response.ok) throw new Error('Failed to delete event');
+      
+      console.log('[Calendar] Event successfully deleted from backend'); //checking if event is deleted
+      setEvents(events.filter(event => event.id !== eventId));
+    } catch (error) {
+      console.error('Error deleting event:', error);
+    }
   };
 
   const getEventsForDay = (day: number) => {
@@ -132,7 +207,7 @@ export function Calendar() {
                             className="delete-button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              deleteEvent(day, event.time, event.title);
+                              deleteEvent(event.id);
                             }}
                             title="Delete event"
                           >
