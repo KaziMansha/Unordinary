@@ -1,0 +1,64 @@
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+  }
+  
+  .day-header {
+    font-weight: bold;
+    text-align: center;
+  }
+  
+  .calendar-cell {
+    border: 1px solid #ddd;
+    height: 120px;
+    width: 100%;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-sizing: border-box;
+    position: relative;
+  }
+  
+  .calendar-cell > div:first-child {
+    font-weight: bold;
+    margin-bottom: 4px;
+  }
+  
+  .event-preview {
+    font-size: 0.75rem;
+    background-color: #e0f7fa;
+    margin-bottom: 4px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+  }
+  
+  .event-list {
+    overflow-y: auto;
+    flex-grow: 1;
+  }
+
+  .delete-button {
+    background: transparent;
+    border: none;
+    color: #d00;
+    font-size: 0.9rem;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  
+  .event-preview:hover .delete-button {
+    opacity: 1;
+  }
+
+  .event-wrapper {
+    display: flex;
+    justify-content: space-between;
+  }
+  

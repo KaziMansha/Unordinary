@@ -1,360 +1,174 @@
-import classes from './Calendar.module.css'
+import { useState } from 'react';
+import './Calendar.css';
 
 export function Calendar() {
-    return (
-        <>
-            <div className={classes.calendar}>
-                <div className={'$classes.month-calendar $classes.month-calendar--five-week'}>
-                   <ul className={'$classes.month-calendar__day-of-week-list'}>
-                        <li className={'$classes.month-calendar__day-of-week'}>
-                            {'Sunday'}
-                        </li>
-                        <li className={'$classes.month-calendar__day-of-week'}>
-                            {'Monday'}
-                        </li>
-                        <li className={'$classes.month-calendar__day-of-week'}>
-                            {'Tuesday'}
-                        </li>
-                        <li className={'$classes.month-calendar__day-of-week'}>
-                            {'Wednesday'}
-                        </li>
-                        <li className={'$classes.month-calendar__day-of-week'}>
-                            {'Thursday'}
-                        </li>
-                        <li className={'$classes.month-calendar__day-of-week'}>
-                            {'Friday'}
-                        </li>
-                        <li className={'$classes.month-calendar__day-of-week'}>
-                            {'Saturday'}
-                        </li>
-                   </ul>
+  const [currentDate, setCurrentDate] = useState(new Date());
 
-                   <div className='$classes.month-calendar__day-list_wrapper'>
-                        <ul className='$classes.month-calendar__day-list'>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'31'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
+  type CalendarEvent = {
+    day: number;
+    month: number;
+    year: number;
+    title: string;
+    time: string;
+  };
 
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'1'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'2'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'3'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'4'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'5'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'6'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'7'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'8'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'9'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'10'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'11'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'12'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'13'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'14'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'15'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'16'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'17'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'18'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'19'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'20'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'21'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'22'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'23'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'24'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'25'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'26'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'27'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'28'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'29'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'30'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                            <li className='$classes.month-calendar__day'>
-                                <button className='$classes.month-calendar__day-label'>
-                                    {'31'}
-                                </button>
-                                <div className='$classes.month-calendar__event-list-wrapper'>
-                                    <ul className='$classes.event-list'>
-                                        
-                                    </ul>
-                                </div>
-                            </li>
-                        </ul>
-                   </div>
-                </div>
-            </div>
-        </>
-    )
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [titleInput, setTitleInput] = useState('');
+  const [timeInput, setTimeInput] = useState('');
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth(); // 0-indexed
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const calendarDays = [];
+  for (let i = 0; i < firstDay; i++) {
+    calendarDays.push(null);
+  }
+  for (let i = 1; i <= daysInMonth; i++) {
+    calendarDays.push(i);
+  }
+
+  const goToPreviousMonth = () => {
+    const prevMonth = new Date(year, month - 1);
+    setCurrentDate(prevMonth);
+  };
+
+  const goToNextMonth = () => {
+    const nextMonth = new Date(year, month + 1);
+    setCurrentDate(nextMonth);
+  };
+
+  const handleDayClick = (day: number) => {
+    setSelectedDay(day);
+    setShowForm(true);
+  };
+
+  const addEvent = () => {
+    if (selectedDay && titleInput) {
+      const newEvent: CalendarEvent = {
+        day: selectedDay,
+        month,
+        year,
+        title: titleInput,
+        time: timeInput,
+      };
+      setEvents([...events, newEvent]);
+      setTitleInput('');
+      setTimeInput('');
+      setShowForm(false);
+    }
+  };
+
+  const deleteEvent = (day: number, time: string, title: string) => {
+    const filtered = events.filter(
+      (event) =>
+        !(
+          event.day === day &&
+          event.time === time &&
+          event.title === title &&
+          event.month === month &&
+          event.year === year
+        )
+    );
+    setEvents(filtered);
+  };
+
+  const getEventsForDay = (day: number) => {
+    return events.filter(
+      (event) => event.day === day && event.month === month && event.year === year
+    );
+  };
+
+  return (
+    <div>
+      <div>
+        <button onClick={goToPreviousMonth}>Previous</button>
+        <span>
+          {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+        </span>
+        <button onClick={goToNextMonth}>Next</button>
+      </div>
+
+      <div className="calendar-grid">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+          <div key={day} className="day-header">
+            {day}
+          </div>
+        ))}
+
+        {calendarDays.map((day, index) => (
+          <div
+            key={index}
+            className="calendar-cell"
+            onClick={() => day && handleDayClick(day)}
+          >
+            <div>{day}</div>
+
+            {day && (
+              <div className="event-list">
+                {getEventsForDay(day)
+                  .sort((a, b) => a.time.localeCompare(b.time))
+                  .map((event, i) => {
+                    const formattedTime = new Date(`1970-01-01T${event.time}`).toLocaleTimeString(
+                      [],
+                      {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      }
+                    );
+
+                    return (
+                      <div key={i} className="event-preview">
+                        <div className="event-wrapper">
+                        <div className="event-content">
+                          <div><strong>{event.title}</strong></div>
+                          <div>{formattedTime}</div>
+                        </div>
+                        <button
+                          className="delete-button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteEvent(day, event.time, event.title);
+                          }}
+                          title="Delete event"
+                        >
+                          ×
+                        </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {showForm && (
+        <div className="event-form">
+          <h3>
+            Add Event for {selectedDay}{' '}
+            {currentDate.toLocaleString('default', { month: 'long' })}
+          </h3>
+          <input
+            type="text"
+            placeholder="Event title"
+            value={titleInput}
+            onChange={(e) => setTitleInput(e.target.value)}
+          />
+          <input
+            type="time"
+            value={timeInput}
+            onChange={(e) => setTimeInput(e.target.value)}
+          />
+          <button onClick={addEvent}>Add Event</button>
+          <button onClick={() => setShowForm(false)}>Cancel</button>
+        </div>
+      )}
+    </div>
+  );
 }
