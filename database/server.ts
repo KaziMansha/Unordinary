@@ -26,7 +26,12 @@ const port = 5000;
 // Middleware to parse JSON requests
 app.use(express.json());
 
-app.use(cors());
+//app.use(cors());
+
+app.use(cors({
+  origin: 'http://localhost:5173', // your frontend URL
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 
 // Set up PostgreSQL connection pool
 const pool = new Pool({
@@ -129,8 +134,16 @@ app.post('/api/hobbies', async (req: Request, res: Response): Promise<void> => {
 });
 
 /*
------------------------------------------------------------Handles AI!!!.-----------------------------------------------------------
+-----------------------------------------------------------Handles AI!!! AND generates hobby.-----------------------------------------------------------
 */
+
+interface GroqResponse {
+  choices: Array<{
+    message: {
+      content: string;
+    };
+  }>;
+}
 
 if (!process.env.GROQ_API_KEY || !process.env.GROQ_MODEL) {
   console.error("Missing GROQ_API_KEY or GROQ_MODEL in .env");
@@ -138,36 +151,66 @@ if (!process.env.GROQ_API_KEY || !process.env.GROQ_MODEL) {
 }
 
 app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<void> => {
-  const { hobbies } = req.body;
-
-  if (!hobbies || !Array.isArray(hobbies)) {
-    res.status(400).json({ error: 'Missing or invalid hobbies data' });
+  // Step 1: Verify the Firebase token from the Authorization header
+  console.log('Received headers:', req.headers);
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'Unauthorized: No token provided' });
     return;
   }
+  const idToken = authHeader.split('Bearer ')[1];
 
-  const hobbyDescriptions = hobbies.map((hobby: any) =>
-    `- Hobby: ${hobby.hobby}, Skill Level: ${hobby.skillLevel}, Goal: ${hobby.goal}`
-  ).join('\n');
-
-  const prompt = `
-Given the following user hobbies:
-
-${hobbyDescriptions}
-
-Suggest a NEW hobby that the user might enjoy, make sure its a hobby that can be done in 15-30 minutes of their day. Be creative but realistic. Keep the description short.
-`;
+  
 
   try {
-    const response = await axios.post(
-      'https://api.groq.com/openai/v1/chat/completions',
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const firebaseUid = decodedToken.uid;
+    if (!firebaseUid) {
+      res.status(400).json({ error: 'Invalid token data' });
+      return;
+    }
+
+    // Step 2: Lookup the user record to obtain internal user ID
+    const userResult = await pool.query('SELECT id FROM users WHERE firebase_uid = $1', [firebaseUid]);
+    if (userResult.rowCount === 0) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    const userId = userResult.rows[0].id;
+
+    // Step 3: Query the hobbies table for that user
+    const hobbyResult = await pool.query(
+      'SELECT hobby, skill_level, goal FROM hobbies WHERE user_id = $1',
+      [userId]
+    );
+    const userHobbies = hobbyResult.rows; // This should be an array of objects
+
+    // Check if the user has any hobbies
+    if (userHobbies.length === 0) {
+      res.status(400).json({ error: 'No hobbies found for this user' });
+      return;
+    }
+
+
+    const existingHobbies = userHobbies.map(h => `"${h.hobby}"`).join(', ');
+    
+    // Step 4: Call your AI suggestion service with the user's hobbies.
+    // Replace this with your actual call to your AI/Groq API.
+    // For demonstration, we'll assume you call an external AI service.
+    const aiResponse = await axios.post<GroqResponse>(
+      'https://api.groq.com/openai/v1/chat/completions', // Example Groq endpoint
       {
         model: process.env.GROQ_MODEL,
-        messages: [
-          { role: "system", content: "You are an expert hobby suggestion assistant." },
-          { role: "user", content: prompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 300
+        messages: [{
+          role: "user",
+          content: `Suggest a NEW hobby that can be done in 15-30 minutes daily, 
+                considering the user's existing hobbies: ${existingHobbies}.
+                Briefly mention how it relates to their current interests.
+                Format: "[Hobby Name] - [1-sentence description]. [Connection to existing hobbies]"
+                Example: 
+                "Quick Sketching - 10-minute gesture drawings of people in cafes. 
+                Builds observation skills from your portrait photography hobby."`
+        }]
       },
       {
         headers: {
@@ -176,11 +219,13 @@ Suggest a NEW hobby that the user might enjoy, make sure its a hobby that can be
         }
       }
     );
+    const suggestion = aiResponse.data.choices[0].message.content;
 
-    const suggestion = response.data.choices?.[0]?.message?.content?.trim() || "No suggestion generated.";
-    res.json({ suggestion });
-  } catch (error: any) {
-    console.error('Error generating hobby suggestion:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Error generating suggestion' });
+    res.status(200).json({ suggestion });
+  } catch (error) {
+    console.error('Error generating hobby suggestion:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+
