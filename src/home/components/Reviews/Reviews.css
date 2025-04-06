@@ -1,0 +1,43 @@
+.review-card {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #fff;
+    max-width: 400px;
+    margin: 1rem auto;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  .review-quote {
+    font-size: 1.2rem;
+    font-style: italic;
+    margin-bottom: 1rem;
+    line-height: 1.4;
+  }
+  
+  .review-user {
+    display: flex;
+    align-items: center;
+    margin-top: 1rem;
+  }
+  
+  .review-user img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 0.75rem;
+  }
+  
+  .review-username {
+    font-weight: bold;
+    margin: 0;
+  }
+  
+  .review-userSince {
+    font-size: 0.85rem;
+    color: #999;
+    margin: 0.25rem 0 0;
+  }
+  
