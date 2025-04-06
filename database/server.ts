@@ -6,6 +6,8 @@ import admin from 'firebase-admin';
 import fs from 'fs';
 import path from 'path';
 import cors from 'cors';
+import axios from 'axios';
+
 
 
 dotenv.config();
@@ -123,5 +125,62 @@ app.post('/api/hobbies', async (req: Request, res: Response): Promise<void> => {
   } catch (error) {
     console.error('Error creating hobby:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/*
+-----------------------------------------------------------Handles AI!!!.-----------------------------------------------------------
+*/
+
+if (!process.env.GROQ_API_KEY || !process.env.GROQ_MODEL) {
+  console.error("Missing GROQ_API_KEY or GROQ_MODEL in .env");
+  process.exit(1);
+}
+
+app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<void> => {
+  const { hobbies } = req.body;
+
+  if (!hobbies || !Array.isArray(hobbies)) {
+    res.status(400).json({ error: 'Missing or invalid hobbies data' });
+    return;
+  }
+
+  const hobbyDescriptions = hobbies.map((hobby: any) =>
+    `- Hobby: ${hobby.hobby}, Skill Level: ${hobby.skillLevel}, Goal: ${hobby.goal}`
+  ).join('\n');
+
+  const prompt = `
+Given the following user hobbies:
+
+${hobbyDescriptions}
+
+Suggest a NEW hobby that the user might enjoy, make sure its a hobby that can be done in 15-30 minutes of their day. Be creative but realistic. Keep the description short.
+`;
+
+  try {
+    const response = await axios.post(
+      'https://api.groq.com/openai/v1/chat/completions',
+      {
+        model: process.env.GROQ_MODEL,
+        messages: [
+          { role: "system", content: "You are an expert hobby suggestion assistant." },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 300
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    const suggestion = response.data.choices?.[0]?.message?.content?.trim() || "No suggestion generated.";
+    res.json({ suggestion });
+  } catch (error: any) {
+    console.error('Error generating hobby suggestion:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Error generating suggestion' });
   }
 });
