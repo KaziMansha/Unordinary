@@ -66,7 +66,7 @@ const HobbySurvey: React.FC = () => {
           })
         );
         setSubmitted(true);
-        navigate("/dashboard");
+        navigate("/Dashboard");
       } catch (error) {
         console.error("Error creating hobbies:", error);
       }

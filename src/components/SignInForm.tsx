@@ -23,7 +23,7 @@ const SignInForm: React.FC = () => {
     const { email, password } = form.values;
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigate('/home');
+      navigate('/Dashboard');
     } catch (error: any) {
       console.error('Sign in error:', error.message);
     }
