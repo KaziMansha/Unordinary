@@ -1,0 +1,71 @@
+.calendar-card {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    width: 220px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin: 1rem;
+    text-align: center;
+    /* optional padding if you want more space inside */
+    padding: 1rem 0;
+  }
+  
+  .calendar-card-heading {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: bold;
+  }
+  
+  .calendar-image img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+  
+  .calendar-placeholder {
+    width: 100%;
+    height: 120px;
+    background-color: #eee;
+    border-radius: 8px;
+  }
+  
+  .calendar-title {
+    margin: 0.5rem 0 0;.wrapper {
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        max-width: 400px;
+        margin: 1rem auto;
+        padding: 1rem;
+        text-align: center;
+        background-color: #fff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      
+      .title {
+        margin-bottom: 1rem;
+      }
+      
+      .image {
+        margin-bottom: 1rem;
+      }
+      
+      .calendarTitle {
+        margin-bottom: 0.5rem;
+      }
+      
+      .calendarText {
+        color: #555;
+      }
+      
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
+  
+  .calendar-description {
+    margin: 0.3rem 0 1rem;
+    font-size: 0.9rem;
+    color: #555;
+  }
+  
