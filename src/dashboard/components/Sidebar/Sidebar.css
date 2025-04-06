@@ -1,89 +1,77 @@
 .sidebar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 220px;
-    background-color: #2c2c2c;
-    color: #fff;
-    display: flex;
-    flex-direction: column;
-    box-sizing: border-box;
-    padding: 1rem;
-  }
-  
-  .sidebar-top {
-    text-align: center;
-  }
-  
-  .sidebar-avatar {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    object-fit: cover;
-    display: block;
-    margin: 0 auto 0.5rem;
-  }
-  
-  .sidebar-username {
-    margin-bottom: 1rem;
-    font-weight: bold;
-  }
-  
-  .sidebar-upload {
-    margin-bottom: 1rem;
-  }
-  
-  .upload-label {
-    display: inline-block;
-    padding: 0.4rem 0.8rem;
-    background-color: #444;
-    color: #fff;
-    cursor: pointer;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
-  }
-  
-  .sidebar-center {
-    margin: 2rem 0;
-  }
-  
-  .sidebar-center details {
-    background-color: #444;
-    border-radius: 4px;
-    margin-bottom: 0.5rem;
-    padding: 0.5rem;
-  }
-  
-  .sidebar-center summary {
-    cursor: pointer;
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-  }
-  
-  .sidebar-center p {
-    margin: 0.5rem 0 0;
-  }
-  
-  .sidebar-suggestions {
-    margin-top: auto;
-    text-align: center;
-    padding-top: 1rem;
-  }
-  
-  .suggestions-button {
-    width: 80%;
-    padding: 0.6rem 1rem;
-    font-size: 1rem;
-    color: #000;
-    background-color: #fff;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-  }
-  
-  .suggestions-button:hover {
-    background-color: #7c5dfa;
-  }
+  position: fixed;
+  left: 0;
+  top: 122px; /* Adjust for your navbar or header height */
+  bottom: 0;
+  width: 220px;
+  background-color: #ffffff;
+  color: #000000;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 1rem;
+  border-right: 2px solid #f1f1f1;
+}
+
+.sidebar-top {
+  text-align: center;
+}
+
+.sidebar-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  cursor: pointer;
+  display: block;
+  margin: 0 auto 0.5rem;
+}
+
+.sidebar-username {
+  margin-bottom: 1rem;
+  font-weight: bold;
+}
+
+.sidebar-center {
+  margin: 2rem 0;
+}
+
+.sidebar-center details {
+  background-color: #ffffff;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid #000000;
+}
+
+.sidebar-center summary {
+  cursor: pointer;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.sidebar-center p {
+  margin: 0.5rem 0 0;
+}
+
+.sidebar-suggestions {
+  margin-top: auto;
+  text-align: center;
+  padding-top: 1rem;
+}
+
+.suggestions-button {
+  width: 80%;
+  padding: 0.6rem 1rem;
+  font-size: 1rem;
+  color: #000;
+  background-color: #fff;
+  border: 1px solid #7c5dfa;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.suggestions-button:hover {
+  background-color: #7c5dfa;
+}
