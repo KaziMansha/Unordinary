@@ -1,0 +1,118 @@
+.mantine-PasswordInput-visibilityToggle { 
+    display: none;
+}
+
+.auth-page-container {
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  .auth-visual-container {
+    flex: 1;
+    background-color: #ddebe5; /* Similar greenish background as example */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    text-align: center;
+  }
+  
+  .image-placeholder {
+    color: #3f3f3f;
+    font-size: 1.2rem;
+  }
+  
+  .auth-form-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+  }
+  
+  .auth-form-paper {
+    width: 100%;
+    max-width: 400px;
+    padding: 2rem;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    border: 1px solid #f1f1f1;
+  }
+  
+  .auth-title {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    color: #333;
+  }
+  
+  .auth-input {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+  
+  .signin-button, .google-signin-button {
+    width: 100%;
+    margin-top: 0.8rem;
+    padding: 0.6rem;
+    border-radius: 25px;
+    background-color: #555555;
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-size: 1rem;
+  }
+  
+  .signin-button:hover, .google-signin-button:hover {
+    background-color: #444;
+  }
+  
+  .google-signin-button {
+    background-color: #ffffff;
+    color: #333;
+    border: 1px solid #ddd;
+    margin-top: 1rem;
+  }
+  
+  .google-signin-button:hover {
+    background-color: #f7f7f7;
+  }
+  
+  .signup-redirect {
+    text-align: center;
+    margin-top: 1.2rem;
+    font-size: 0.9rem;
+  }
+  
+  .signup-redirect a {
+    color: #7c5dfa;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  
+  .signup-redirect a:hover {
+    text-decoration: underline;
+  }
+  
+  @media (max-width: 768px) {
+    .auth-page-container {
+      flex-direction: column;
+    }
+  
+    .auth-visual-container {
+      display: none;
+    }
+  
+    .auth-form-container {
+      width: 100%;
+      padding: 1.5rem;
+    }
+  
+    .auth-form-paper {
+      padding: 1.5rem;
+    }
+  }
+  

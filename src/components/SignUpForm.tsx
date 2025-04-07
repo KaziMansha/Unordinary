@@ -6,7 +6,9 @@ import { createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase-config';
 import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom'
-import './AuthForm.css';
+import leftImage from '../assets/Login_Image.png'
+import './SignUpForm.css'
+import './Authform.css'
 
 const SignUpForm: React.FC = () => {
   const navigate = useNavigate();
@@ -71,47 +73,58 @@ const SignUpForm: React.FC = () => {
   };
 
   return (
-    <div className="auth-form-wrapper">
-      <Paper radius="md" p="xl" withBorder>
-        <Title style={{ textAlign: 'center' }} mb="lg">
-          Sign Up
-        </Title>
+    <div className="auth-page-container">
+    <div className="auth-visual-container">
+      <div className="image-placeholder">
+        <img src={ leftImage }/>
+      </div>
+    </div>
+
+    <div className="auth-form-container">
+      <Paper radius="md" className="auth-form-paper">
+        <Title className="auth-title">Welcome to Unordinary</Title>
+        
         <form onSubmit={form.onSubmit(handleEmailAuth)}>
           <TextInput
-            className="custom-text-input"
+            className="auth-input"
             label="Email"
             placeholder="you@example.com"
             required
             {...form.getInputProps('email')}
           />
+
           <PasswordInput
-            className="custom-text-input"
+            className="auth-input"
             label="Password"
             placeholder="Your password"
             required
-            mt="md"
             {...form.getInputProps('password')}
           />
+
           <PasswordInput
-            className="custom-text-input"
+            className="auth-input"
             label="Confirm Password"
             placeholder="Confirm password"
             required
             mt="md"
             {...form.getInputProps('confirmPassword')}
           />
-          <div className="auth-form-buttons">
-            <Button type="submit" className="auth-button">
-              Sign Up
-            </Button>
-            <Button className="auth-button" onClick={handleGoogleSignIn}>
-              Sign up with Google
-            </Button>
-          </div>
+
+          <Button type="submit" className="signin-button">
+            Sign In
+          </Button>
+
+          <Button className="google-signin-button" onClick={handleGoogleSignIn}>
+            Sign in with Google
+          </Button>
         </form>
+
+        <div className="signup-redirect">
+          <span>Already have an account?</span> <Link to="/login">Sign In!</Link>
+        </div>
       </Paper>
-      <Link to="/login"><button>Already have an account? Sign In!</button></Link>
     </div>
+  </div>
   );
 };
 
