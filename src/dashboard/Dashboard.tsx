@@ -2,11 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase-config';
 import { useNavigate } from 'react-router-dom';
-
 import { Calendar } from './components/Calendar/Calendar'
 import HobbySurvey from './components/HobbySurvey/HobbySurvey';
 import HobbySuggestion from './components/HobbySuggestion/HobbySuggestion';
-
+import Sidebar from './components/Sidebar/Sidebar.tsx';
 
 const DashboardPage: React.FC = () => {
     const [user, setUser] = useState<any>(null);
@@ -58,6 +57,7 @@ const DashboardPage: React.FC = () => {
     
     return (
         <>
+            <Sidebar />
             <Calendar />
             <HobbySurvey />
             <HobbySuggestion />
