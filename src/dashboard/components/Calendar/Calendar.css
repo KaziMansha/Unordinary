@@ -64,4 +64,14 @@
     display: flex;
     justify-content: space-between;
   }
+
+  /* Calendar.css */
+.hobby-suggestion-container {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 100; /* Ensure it stays on top */
+  width: 300px; /* Fixed width prevents layout shifts */
+}
+
   

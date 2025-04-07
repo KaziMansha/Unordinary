@@ -3,6 +3,7 @@ import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase-config';
 import { useNavigate } from 'react-router-dom';
 import { Calendar } from './components/Calendar/Calendar'
+import HobbySuggestion from './components/HobbySuggestion/HobbySuggestion';
 import Sidebar from './components/Sidebar/Sidebar.tsx';
 import { NavBar } from '../home/components/Navbar/NavbarDash';
 import './Dashboard.css'
