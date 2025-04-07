@@ -62,9 +62,9 @@ const Sidebar: React.FC = () => {
 
   // Dummy hobby data
   const dummyHobbies: Hobby[] = [
-    { id: 1, hobby: 'Reading', skill_level: 'Intermediate', goal: 'Read 10 books' },
-    { id: 2, hobby: 'Chess', skill_level: 'Beginner', goal: 'Join local tournament' },
-    { id: 3, hobby: 'Painting', skill_level: 'Advanced', goal: 'Sell an artwork' },
+    { id: 1, hobby: 'Reading', skill_level: 'Intermediate', goal: 'To have fun' },
+    { id: 2, hobby: 'Chess', skill_level: 'Beginner', goal: 'To improve in skill' },
+    { id: 3, hobby: 'Painting', skill_level: 'Advanced', goal: 'Practice' },
   ];
   // Whether to use dummy data or real API
   const useDummyData = true;
