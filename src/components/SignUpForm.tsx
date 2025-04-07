@@ -111,7 +111,7 @@ const SignUpForm: React.FC = () => {
           />
 
           <Button type="submit" className="signin-button">
-            Sign In
+            Sign up
           </Button>
 
           <Button className="google-signin-button" onClick={handleGoogleSignIn}>
