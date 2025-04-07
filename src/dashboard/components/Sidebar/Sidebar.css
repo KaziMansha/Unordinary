@@ -1,4 +1,4 @@
-body{
+body {
   margin: 0;
 }
 
@@ -38,7 +38,7 @@ body{
 }
 
 .hobby-item {
-  background-color: #e3e2e2; 
+  background-color: #e3e2e2;
   border-radius: 4px;
   margin-bottom: 0.5rem;
   padding: 0.5rem;
@@ -48,7 +48,6 @@ body{
 .hobby-item p {
   margin: 0.25rem 0;
 }
-
 
 .sidebar-suggestions {
   margin-top: 10%;
@@ -70,4 +69,44 @@ body{
 
 .suggestions-button:hover {
   background-color: #7c5dfa;
+  color: #fff;
+}
+
+/* Popup Overlay / Modal Styles */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9999; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.popup-content {
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  width: 300px;
+  max-width: 90%;
+  position: relative;
+}
+
+.popup-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+.hobby-text {
+  font-weight: 500;
+  margin-top: 1rem;
+  text-align: center;
 }
