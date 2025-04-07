@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Calendar } from './components/Calendar/Calendar'
 import Sidebar from './components/Sidebar/Sidebar.tsx';
 import { NavBar } from '../home/components/Navbar/NavbarDash';
+import './Dashboard.css'
 
 const DashboardPage: React.FC = () => {
     const [user, setUser] = useState<any>(null);
@@ -47,12 +48,14 @@ const DashboardPage: React.FC = () => {
     
     return (
         <>
+        <div className='dashboard-wrapper'>
         <NavBar />
-        <div style={{ display: 'flex'}}>
+        <div className='dashboard-component-wrapper'>
           <Sidebar />
-            <div style={{ flex: 1, padding: '1rem'}}>
+            <div className='dashboard-calendar'>
               <Calendar />
             </div>
+        </div>
         </div>
         </>
     )

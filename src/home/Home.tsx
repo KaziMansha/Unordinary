@@ -8,49 +8,54 @@ import unordinaryLogo from './assets/Unordinary_Logo.png'
 import sampleCalendar from './assets/sample_calendar.png'
 import kaziSample from './assets/kazi_sample.jpeg'
 import dudeStock from './assets/dude_sample.jpeg'
+import './Home.css'
 
 const HomePage: React.FC = () => {
     return (
         <>
+        <div className='wrapper'>
         <NavBar />
-        <Hero />
-        <HobbyCard
-        image = { unordinaryLogo }
-        hobbyName= 'Unordinary'
-        description='Unordinary'
-        />
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            <CalendarCard
-            title="Calendar 1"
-            description="Check out this calendar!"            
-            imageUrl= {sampleCalendar}
+        <div className = "home-page-wrapper">
+            <Hero />
+            <HobbyCard
+            image = { unordinaryLogo }
+            hobbyName= 'Unordinary'
+            description='Unordinary'
             />
-            <CalendarCard
-            title="Calendar 2"
-            description="Check out this calendar!"            
-            imageUrl= {sampleCalendar}
-            />
-            <CalendarCard
-            title="Calendar 3"
-            description="Check out this calendar!"
-            imageUrl= {sampleCalendar}
-            />
-        </div>
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap'}}>
-            <Reviews
-            userName="Kazi"
-            text="I absolutely love this app! It has changed how I organize my days."
-            userSince="2025"
-            userImage = {kaziSample}
-            />
-            <Reviews
-            userName="Jeff"
-            text="Certified banger, I use it every day!"
-            userSince="2025"
-            userImage = {dudeStock}
-            />
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                <CalendarCard
+                title="Calendar 1"
+                description="Check out this calendar!"            
+                imageUrl= {sampleCalendar}
+                />
+                <CalendarCard
+                title="Calendar 2"
+                description="Check out this calendar!"            
+                imageUrl= {sampleCalendar}
+                />
+                <CalendarCard
+                title="Calendar 3"
+                description="Check out this calendar!"
+                imageUrl= {sampleCalendar}
+                />
+            </div>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap'}}>
+                <Reviews
+                userName="Kazi"
+                text="I absolutely love this app! It has changed how I organize my days."
+                userSince="2025"
+                userImage = {kaziSample}
+                />
+                <Reviews
+                userName="Jeff"
+                text="Certified banger, I use it every day!"
+                userSince="2025"
+                userImage = {dudeStock}
+                />
+            </div>
         </div>
         <Footer />
+        </div>
         </>
     )
 }
