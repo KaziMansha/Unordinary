@@ -3,9 +3,8 @@ import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase-config';
 import { useNavigate } from 'react-router-dom';
 import { Calendar } from './components/Calendar/Calendar'
-import HobbySurvey from './components/HobbySurvey/HobbySurvey';
 import Sidebar from './components/Sidebar/Sidebar.tsx';
-import { NavBar } from '../home/components/Navbar/Navbar';
+import { NavBar } from '../home/components/Navbar/NavbarDash';
 
 const DashboardPage: React.FC = () => {
     const [user, setUser] = useState<any>(null);
@@ -42,15 +41,6 @@ const DashboardPage: React.FC = () => {
           });
         }
       }, [user]);
-    
-      const handleSignOut = async () => { // will need to add a sign out button to the dashboard page.
-        try {
-          await signOut(auth);
-        } catch (error: any) {
-          console.error('Sign out error', error.message);
-        }
-      };
-    
       if (!user) {
         return <div>Loading...</div>;
       }
