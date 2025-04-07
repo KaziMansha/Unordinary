@@ -48,7 +48,7 @@ const HomePage: React.FC = () => {
                 />
                 <Reviews
                 userName="Playboi Shmarti"
-                text="CYUH!!! ABSOLUTE BANGA, MAKES ME WANNA PLAN MY ALBUM! FWAEH!"
+                text="SEEEYUH!!! ABSOLUTE BANGA, MAKES ME WANNA PLAN MY ALBUM! FWAEH!"
                 userSince="2017"
                 userImage = {cartiSample}
                 />
