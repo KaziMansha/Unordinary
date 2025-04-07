@@ -12,10 +12,10 @@ export function NavBar() {
             </div>
             <ul className = {classes.navLinks}>
                 <li>
-                    <Link to="*">Dashboard</Link>
+                    <Link to="/">Home</Link>
                 </li>
                 <li>
-                    <Link to="*">Profile</Link>
+                    <Link to="/dashboard">Dashboard</Link>
                 </li>
                 <li>
                     <Link to="*">About</Link>

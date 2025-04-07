@@ -1,0 +1,14 @@
+.dashboard-wrapper {
+    min-height: 100vh;
+}
+
+.dashboard-component-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.dashboard-calendar {
+    flex: 1;
+    min-width: 0;
+}

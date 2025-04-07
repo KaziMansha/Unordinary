@@ -9,7 +9,7 @@ interface CalendarCardProps {
 
 export function CalendarCard({ title, description, imageUrl }: CalendarCardProps) {
   return (
-      <div className="calendar-card">
+    <div className="calendar-card">
       <div className="calendar-image">
         {imageUrl ? (
           <img src={imageUrl} alt={title} />
