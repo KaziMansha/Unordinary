@@ -57,7 +57,7 @@ const DashboardPage: React.FC = () => {
     
     return (
         <>
-            <Sidebar />
+            
             <Calendar />
             <HobbySurvey />
             <HobbySuggestion />

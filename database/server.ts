@@ -199,9 +199,8 @@ app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<voi
         model: process.env.GROQ_MODEL,
         messages: [{
           role: "user",
-          content: `Suggest a NEW hobby that can be done in 15-30 minutes daily, 
+          content: `Suggest a fun and engaging hobby avtivity that can be done in 15-30 minutes daily, 
                 considering the user's existing hobbies: ${existingHobbies}.
-                Briefly mention how it relates to their current interests.
                 Format: "[Hobby Name] - [1-sentence description]. [Connection to existing hobbies]"
                 Example: 
                 "Quick Sketching - 10-minute gesture drawings of people in cafes. 
@@ -260,7 +259,7 @@ app.get('/api/events', async (req: Request, res: Response) => {
     res.status(200).json(eventsResult.rows);
 
     console.log(`[Server] Found ${eventsResult.rowCount} events for user ${userId}`);
-    res.status(200).json(eventsResult.rows); //is this correct? I think it is, but just checking.
+     //is this correct? I think it is, but just checking.
 
   } catch (error) {
     console.error('Error fetching events:', error);
@@ -308,7 +307,7 @@ app.post('/api/events', async (req: Request, res: Response) => {
     res.status(201).json(result.rows[0]);
 
     console.log(`[Server] Created event for user ${userId}:`, result.rows[0]);// Log the created event for debugging
-    res.status(201).json(result.rows[0]);
+
 
   } catch (error) {
     console.error('Error creating event:', error);
@@ -356,7 +355,7 @@ app.delete('/api/events/:id', async (req: Request, res: Response) => {
     res.status(200).json({ message: 'Event deleted successfully' });
 
     console.log(`[Server] Deleted event ${eventId} for user ${userId}`); // IF this is not working, then the event is not being deleted. BOMBOCLAT!
-    res.status(200).json({ message: 'Event deleted successfully' });
+    //res.status(200).json({ message: 'Event deleted successfully' });
 
   } catch (error) {
     console.error('Error deleting event:', error);
