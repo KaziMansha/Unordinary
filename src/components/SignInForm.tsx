@@ -33,7 +33,7 @@ const SignInForm: React.FC = () => {
   const handleGoogleSignIn = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
-      navigate('/home');
+      navigate('/Dashboard');
     } catch (error: any) {
       console.error('Google sign in error:', error.message);
     }
