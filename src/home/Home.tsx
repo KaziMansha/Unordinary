@@ -6,7 +6,7 @@ import { Reviews } from './components/Reviews/Reviews.tsx'
 import { CalendarCard } from './components/CalendarCard/CalendarCard.tsx'
 import sampleCalendar from './assets/sample_calendar.png'
 import kaziSample from './assets/kazi_sample.jpeg'
-import dudeStock from './assets/dude_sample.jpeg'
+import cartiSample from './assets/carti_sample.png'
 import creativeWriting from './assets/creative_writing.jpg'
 import './Home.css'
 
@@ -47,10 +47,10 @@ const HomePage: React.FC = () => {
                 userImage = {kaziSample}
                 />
                 <Reviews
-                userName="Jeff"
-                text="Certified banger, I use it every day!"
-                userSince="2025"
-                userImage = {dudeStock}
+                userName="Playboi Shmarti"
+                text="SEEEYUH!!! ABSOLUTE BANGA, MAKES ME WANNA PLAN MY ALBUM! FWAEH!"
+                userSince="2017"
+                userImage = {cartiSample}
                 />
             </div>
         </div>
