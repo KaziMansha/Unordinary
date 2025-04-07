@@ -4,10 +4,10 @@ import { Hero } from './components/Hero/Hero.tsx'
 import { HobbyCard } from './components/HobbyCard/HobbyCard.tsx'
 import { Reviews } from './components/Reviews/Reviews.tsx'
 import { CalendarCard } from './components/CalendarCard/CalendarCard.tsx'
-import unordinaryLogo from './assets/Unordinary_Logo.png'
 import sampleCalendar from './assets/sample_calendar.png'
 import kaziSample from './assets/kazi_sample.jpeg'
 import dudeStock from './assets/dude_sample.jpeg'
+import creativeWriting from './assets/creative_writing.jpg'
 import './Home.css'
 
 const HomePage: React.FC = () => {
@@ -18,24 +18,24 @@ const HomePage: React.FC = () => {
         <div className = "home-page-wrapper">
             <Hero />
             <HobbyCard
-            image = { unordinaryLogo }
-            hobbyName= 'Unordinary'
-            description='Unordinary'
+            image = { creativeWriting }
+            hobbyName= 'Creative Writing'
+            description='Write short stories, poems, or even start your own novel. It’s a great way to express yourself and improve your communication skills.'
             />
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                 <CalendarCard
-                title="Calendar 1"
-                description="Check out this calendar!"            
+                title="Event 1"
+                description="Check out this event!"            
                 imageUrl= {sampleCalendar}
                 />
                 <CalendarCard
-                title="Calendar 2"
-                description="Check out this calendar!"            
+                title="Event 2"
+                description="Check out this event!"            
                 imageUrl= {sampleCalendar}
                 />
                 <CalendarCard
-                title="Calendar 3"
-                description="Check out this calendar!"
+                title="Event 3"
+                description="Check out this event!"
                 imageUrl= {sampleCalendar}
                 />
             </div>
