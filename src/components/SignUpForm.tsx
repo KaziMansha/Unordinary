@@ -5,6 +5,7 @@ import { useForm } from '@mantine/form';
 import { createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase-config';
 import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom'
 import './AuthForm.css';
 
 const SignUpForm: React.FC = () => {
@@ -109,6 +110,7 @@ const SignUpForm: React.FC = () => {
           </div>
         </form>
       </Paper>
+      <Link to="/login"><button>Already have an account? Sign In!</button></Link>
     </div>
   );
 };

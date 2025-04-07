@@ -22,8 +22,8 @@ export function NavBar() {
                 </li>
             </ul>
             <div className = {classes.authButtons}>
-                <Link to="/auth"><button className={classes.login}>Login</button></Link>
-                <Link to="/auth"><button className={classes.login}>Sign Up</button></Link>
+                <Link to="/login"><button className={classes.login}>Login</button></Link>
+                <Link to="/signup"><button className={classes.login}>Sign Up</button></Link>
             </div>
         </nav>
         </>
