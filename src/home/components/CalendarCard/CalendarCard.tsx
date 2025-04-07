@@ -17,7 +17,6 @@ export function CalendarCard({ title, description, imageUrl }: CalendarCardProps
           <div className="calendar-placeholder" />
         )}
       </div>
-
       <h3 className="calendar-title">{title}</h3>
       <p className="calendar-description">{description}</p>
     </div>

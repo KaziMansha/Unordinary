@@ -1,70 +1,94 @@
 .hero {
-    position: relative;
-    width: 100%;
-    background-color: #ffffff;
-    color: #1f0044;
-    padding: 6rem 2rem;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    text-align: center;
-    overflow: hidden;
-    border-top: 2px solid #f1f1f1;
-    border-bottom: 2px solid #f1f1f1;
-    display: flex;
-    justify-content: center;
+  position: relative;
+  width: 100%;
+  background-color: #ffffff;
+  color: #1f0044;
+  padding: 12rem 2rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  text-align: center;
+  overflow: hidden;
+  border-top: 2px solid #f1f1f1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.content {
+  max-width: 850px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.headline {
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  font-weight: bold;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+}
+
+.highlight {
+  color: #7c5dfa;
+}
+
+.subText {
+  font-size: clamp(1rem, 2vw, 1.6rem);
+  margin-bottom: 2.5rem;
+  opacity: 0.8;
+  max-width: 650px;
+}
+
+.ctaButton {
+  font-size: 1.2rem;
+  padding: 1rem 2.5rem;
+  border-radius: 50px;
+  background-color: #7c5dfa;
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 6px 20px rgba(124, 93, 250, 0.3);
+}
+
+.ctaButton:hover {
+  background-color: #6038d3;
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(124, 93, 250, 0.4);
+}
+
+@media (max-width: 1024px) {
+  .hero {
+    padding: 8rem 1.5rem;
   }
-  
+}
+
+@media (max-width: 768px) {
+  .hero {
+    padding: 6rem 1rem;
+  }
+
   .content {
-    max-width: 700px;
-    z-index: 2;
+    max-width: 90%;
   }
-  
+}
+
+@media (max-width: 480px) {
+  .hero {
+    padding: 5rem 1rem;
+  }
+
   .headline {
-    font-size: clamp(2rem, 5vw, 4rem);
-    font-weight: bold;
-    margin-bottom: 1rem;
+    font-size: clamp(2rem, 7vw, 3rem);
   }
-  
-  .highlight {
-    color: #7c5dfa;
-  }
-  
+
   .subText {
-    font-size: clamp(1rem, 2vw, 1.5rem);
-    margin-bottom: 2rem;
-    opacity: 0.8;
+    font-size: clamp(1rem, 3.5vw, 1.4rem);
   }
-  
+
   .ctaButton {
-    font-size: 1.2rem;
-    padding: 0.8rem 2rem;
-    border-radius: 25px;
-    background-color: #7c5dfa;
-    color: #ffffff;
-    border: none;
-    cursor: pointer;
-    transition: transform 0.3s, background-color 0.3s;
+    width: 100%;
+    padding: 1rem;
   }
-  
-  .ctaButton:hover {
-    background-color: #6038d3;
-    transform: translateY(-3px);
-  }
-  
-  /* Responsive adjustments */
-  @media (max-width: 1024px) {
-  }
-  
-  @media (max-width: 768px) {
-    .hero {
-      padding: 4rem 1rem;
-    }
-  
-  }
-  
-  @media (max-width: 480px) {
-  
-    .hero {
-      padding: 3rem 1rem;
-    }
-  }
-  
+}
