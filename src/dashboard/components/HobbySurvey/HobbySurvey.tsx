@@ -11,9 +11,10 @@ import {
   ActionIcon,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
-import { IconPlus, IconMinus } from "@tabler/icons-react";
+import { IconPlus, IconMinus, IconChevronDown } from "@tabler/icons-react";
 import { getAuth } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
+import './HobbySurvey.css'
 
 interface Hobby {
   hobby: string;
@@ -74,45 +75,37 @@ const HobbySurvey: React.FC = () => {
   };
 
   return (
-    <Container size="sm" p="lg">
-      <Title order={2} mb="md" align="center">
+    <div style={{ overflow: 'visible', position: 'relative', zIndex: 1 }}>
+    <Container size="md" className="survey-container">
+      <Title order={2} className="survey-title">
         Hobby Survey
       </Title>
+
       {!submitted ? (
-        <Box
-          component="form"
-          onSubmit={form.onSubmit(handleSubmit)}
-          p="md"
-          sx={{ background: "#f8f9fa", borderRadius: "8px" }}
-        >
+        <Box component="form" onSubmit={form.onSubmit(handleSubmit)} className="survey-form">
           {form.values.hobbies.map((_, index) => (
-            <Box
-              key={index}
-              mb="md"
-              p="md"
-              sx={{
-                border: "1px solid #ddd",
-                borderRadius: "8px",
-                background: "#fff",
-              }}
-            >
-              <Group position="apart">
-                <Title order={4}>Hobby {index + 1}</Title>
+            <Box key={index} className="survey-hobby-section">
+              <Group justify="space-between" mb="sm">
+                <Title order={4} className="hobby-section-title">
+                  Hobby {index + 1}
+                </Title>
                 {form.values.hobbies.length > 1 && (
                   <ActionIcon
                     color="red"
                     onClick={() => form.removeListItem("hobbies", index)}
                   >
-                    <IconMinus size={20} />
+                    <IconMinus size={18} />
                   </ActionIcon>
                 )}
               </Group>
+
               <TextInput
                 label="What is a hobby you wish to focus on?"
                 placeholder="Enter hobby"
                 {...form.getInputProps(`hobbies.${index}.hobby`)}
                 required
               />
+
               <Select
                 label="What is your current skill level?"
                 placeholder="Select skill level"
@@ -121,10 +114,23 @@ const HobbySurvey: React.FC = () => {
                   { value: "intermediate", label: "Intermediate" },
                   { value: "pro", label: "Pro" },
                 ]}
+                comboboxProps={{
+                  withinPortal: true,
+                  transitionProps: { transition: 'pop', duration: 150 },
+                  shadow: 'md',
+                  position: 'bottom-start',
+                  portalProps: {
+                    style: { zIndex: 9999 }, // ensures dropdown is layered correctly
+                  }
+                }}
+                rightSection={<IconChevronDown size={16} />}
+                rightSectionWidth={30}
+                withCheckIcon={false}
                 {...form.getInputProps(`hobbies.${index}.skillLevel`)}
                 required
                 mt="md"
               />
+
               <Select
                 label="What is your goal with this hobby?"
                 placeholder="Select goal"
@@ -133,15 +139,28 @@ const HobbySurvey: React.FC = () => {
                   { value: "practice", label: "To simply practice" },
                   { value: "fun", label: "To have fun" },
                 ]}
+                comboboxProps={{
+                  withinPortal: true,
+                  transitionProps: { transition: 'pop', duration: 150 },
+                  shadow: 'md',
+                  position: 'bottom-start',
+                  portalProps: {
+                    style: { zIndex: 9999 }, // ensures dropdown is layered correctly
+                  }
+                }}
+                rightSection={<IconChevronDown size={16} />}
+                rightSectionWidth={30}
+                withCheckIcon={false}
                 {...form.getInputProps(`hobbies.${index}.goal`)}
                 required
                 mt="md"
               />
             </Box>
           ))}
-          <Group position="center" mt="md">
+
+          <Group justify="space-between" mt="md">
             <Button
-              variant="light"
+              variant="outline"
               leftIcon={<IconPlus size={16} />}
               onClick={() =>
                 form.insertListItem("hobbies", {
@@ -154,16 +173,18 @@ const HobbySurvey: React.FC = () => {
               Add Hobby
             </Button>
           </Group>
-          <Button type="submit" fullWidth mt="lg" color="blue">
+
+          <Button type="submit" fullWidth mt="xl" className="submit-button">
             Submit Survey
           </Button>
         </Box>
       ) : (
-        <Title order={3} color="green" align="center">
+        <Title order={3} align="center" color="green">
           Thank you for your response!
         </Title>
       )}
     </Container>
+    </div>
   );
 };
 

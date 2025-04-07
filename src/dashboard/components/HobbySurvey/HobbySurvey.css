@@ -1,0 +1,77 @@
+.mantine-Combobox-dropdown {
+    position: absolute !important;
+    top: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    inset: unset !important;
+    z-index: 9999 !important;
+  }
+
+.survey-container,
+.survey-form {
+  overflow: visible;
+  position: relative;
+  z-index: 1;
+}
+  
+
+.mantine-Select-rightSection {
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }  
+
+.survey-container {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  .survey-title {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: #1f0044;
+  }
+  
+  .survey-form {
+    background-color: #fdfdfd;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+    border: 1px solid #e4e4e4;
+  }
+  
+  .survey-hobby-section {
+    background-color: #ffffff;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+  }
+  
+  .hobby-section-title {
+    color: #7c5dfa;
+  }
+  
+  .submit-button {
+    background-color: #7c5dfa;
+    color: white;
+    transition: background-color 0.3s ease;
+  }
+  
+  .submit-button:hover {
+    background-color: #6038d3;
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .survey-form {
+      padding: 1.5rem;
+    }
+  
+    .survey-hobby-section {
+      padding: 1rem;
+    }
+  }
+  
