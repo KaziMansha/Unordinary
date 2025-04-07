@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { signOut, onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../firebase-config';
+import { Link } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom';
-import { Calendar } from './components/Calendar/Calendar'
-import HobbySuggestion from './components/HobbySuggestion/HobbySuggestion';
-import Sidebar from './components/Sidebar/Sidebar.tsx';
-import { NavBar } from '../home/components/Navbar/NavbarDash';
+import classes from './Navbar.module.css'
+import Unordinary_Logo from '../../assets/Unordinary_Logo.png'
+import { signOut, onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../../../firebase-config';
 
-const DashboardPage: React.FC = () => {
+
+
+export function NavBar() {
     const [user, setUser] = useState<any>(null);
       const navigate = useNavigate();
     
@@ -42,21 +43,39 @@ const DashboardPage: React.FC = () => {
           });
         }
       }, [user]);
+    
+      const handleSignOut = async () => { // will need to add a sign out button to the dashboard page.
+        try {
+          await signOut(auth);
+        } catch (error: any) {
+          console.error('Sign out error', error.message);
+        }
+      };
+    
       if (!user) {
         return <div>Loading...</div>;
-      }
-    
+    }
     return (
         <>
-        <NavBar />
-        <div style={{ display: 'flex'}}>
-          <Sidebar />
-            <div style={{ flex: 1, padding: '1rem'}}>
-              <Calendar />
+        <nav className = {classes.navbar}>
+            <div className = {classes.logo}>
+                <img src = {Unordinary_Logo} alt = "Unordinary Logo" />
             </div>
-        </div>
+            <ul className = {classes.navLinks}>
+                <li>
+                    <Link to="*">Dashboard</Link>
+                </li>
+                <li>
+                    <Link to="*">Profile</Link>
+                </li>
+                <li>
+                    <Link to="*">About</Link>
+                </li>
+            </ul>
+            <div className = {classes.authButtons}>
+                <button className={classes.login} onClick={handleSignOut}>Sign Out</button>
+            </div>
+        </nav>
         </>
     )
 }
-
-export default DashboardPage

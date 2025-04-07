@@ -11,7 +11,7 @@
   
   .calendar-cell {
     border: 1px solid #ddd;
-    height: 120px;
+    height: 12vh;
     width: 100%;
     padding: 4px;
     display: flex;
@@ -29,13 +29,16 @@
   .event-preview {
     font-size: 0.75rem;
     background-color: #e0f7fa;
-    margin-bottom: 4px;
     padding: 2px 4px;
     border-radius: 4px;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
     flex-shrink: 0;
+  }
+
+  .event-form h3 {
+    margin-bottom: 0;
   }
   
   .event-list {

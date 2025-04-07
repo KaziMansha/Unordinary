@@ -1,8 +1,8 @@
+body{
+  margin: 0;
+}
+
 .sidebar {
-  position: fixed;
-  left: 0;
-  top: 122px; /* Adjust for your navbar or header height */
-  bottom: 0;
   width: 220px;
   background-color: #ffffff;
   color: #000000;
@@ -11,6 +11,7 @@
   box-sizing: border-box;
   padding: 1rem;
   border-right: 2px solid #f1f1f1;
+  margin-bottom: 0;
 }
 
 .sidebar-top {
@@ -36,26 +37,21 @@
   margin: 2rem 0;
 }
 
-.sidebar-center details {
-  background-color: #ffffff;
+.hobby-item {
+  background-color: #e3e2e2; 
   border-radius: 4px;
   margin-bottom: 0.5rem;
   padding: 0.5rem;
-  border: 1px solid #000000;
+  color: #000000;
 }
 
-.sidebar-center summary {
-  cursor: pointer;
-  font-weight: 500;
-  margin-bottom: 0.5rem;
+.hobby-item p {
+  margin: 0.25rem 0;
 }
 
-.sidebar-center p {
-  margin: 0.5rem 0 0;
-}
 
 .sidebar-suggestions {
-  margin-top: auto;
+  margin-top: 10%;
   text-align: center;
   padding-top: 1rem;
 }
