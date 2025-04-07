@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Calendar } from './components/Calendar/Calendar'
 import HobbySurvey from './components/HobbySurvey/HobbySurvey';
 import Sidebar from './components/Sidebar/Sidebar.tsx';
+import { NavBar } from '../home/components/Navbar/Navbar';
 
 const DashboardPage: React.FC = () => {
     const [user, setUser] = useState<any>(null);
@@ -56,9 +57,13 @@ const DashboardPage: React.FC = () => {
     
     return (
         <>
-            <Sidebar />
-            <Calendar />
-            <HobbySurvey />
+        <NavBar />
+        <div style={{ display: 'flex'}}>
+          <Sidebar />
+            <div style={{ flex: 1, padding: '1rem'}}>
+              <Calendar />
+            </div>
+        </div>
         </>
     )
 }

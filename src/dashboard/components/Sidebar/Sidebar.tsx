@@ -17,13 +17,13 @@ const Sidebar: React.FC = () => {
 
   // 1) Dummy data array
   const dummyHobbies: Hobby[] = [
-    //{ id: 1, hobby: 'Reading', skill_level: 'Intermediate', goal: 'Read 10 books' },
-    //{ id: 2, hobby: 'Chess', skill_level: '', goal: 'Join local tournament' },
-    //{ id: 3, hobby: 'Painting', skill_level: 'Advanced', goal: 'Sell an artwork' },
+    { id: 1, hobby: 'Reading', skill_level: 'Intermediate', goal: 'Read 10 books' },
+    { id: 2, hobby: 'Chess', skill_level: '', goal: 'Join local tournament' },
+    { id: 3, hobby: 'Painting', skill_level: 'Advanced', goal: 'Sell an artwork' },
   ];
 
   // 2) Flag to toggle dummy data vs actual API
-  const useDummyData = false; // Set to false when ready to connect to your real endpoint
+  const useDummyData = true; // Set to false when ready to connect to your real endpoint
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -93,14 +93,15 @@ const Sidebar: React.FC = () => {
       </div>
 
       <div className="sidebar-center">
-        {hobbies.map((hobby, index) => (
-          <details key={hobby.id}>
-            <summary>Hobby #{index + 1}: {hobby.hobby || 'N/A'}</summary>
-            <p>Skill: {hobby.skill_level || 'N/A'}</p>
-            <p>Goal: {hobby.goal || 'N/A'}</p>
-          </details>
-        ))}
-      </div>
+      {hobbies.map((hobby, index) => (
+    <div key={hobby.id} className="hobby-item">
+      <p>Hobby #{index + 1}: {hobby.hobby || 'N/A'}</p>
+      <p>Skill: {hobby.skill_level || 'N/A'}</p>
+      <p>Goal: {hobby.goal || 'N/A'}</p>
+    </div>
+  ))}
+</div>
+
 
       <div className="sidebar-suggestions">
         <button className="suggestions-button">Suggestions</button>
