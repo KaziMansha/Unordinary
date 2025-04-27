@@ -74,4 +74,16 @@
   width: 300px; /* Fixed width prevents layout shifts */
 }
 
-  
+.calendar-grid.week-view {
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.calendar-grid.week-view .calendar-cell {
+  height: 20vh;
+}
+
+/* Gray out dates outside of current month */
+.outside-month {
+  background-color: #f0f0f0;
+  color: #999;
+}

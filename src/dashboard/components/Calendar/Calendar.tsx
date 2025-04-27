@@ -1,10 +1,10 @@
-// Calendar.tsx
 import { useState, useEffect } from 'react';
-import { auth } from '../../../firebase-config.ts'; // Adjust path as needed
+import { auth } from '../../../firebase-config.ts';
 import './Calendar.css';
 
 export function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
 
   type CalendarEvent = {
     id: number;
@@ -24,20 +24,15 @@ export function Calendar() {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        console.log('[Calendar] Attempting to fetch events...');
         const idToken = await auth.currentUser?.getIdToken();
         if (!idToken) return;
-    
+
         const response = await fetch('http://localhost:5000/api/events', {
-          headers: {
-            'Authorization': `Bearer ${idToken}`,
-          },
+          headers: { 'Authorization': `Bearer ${idToken}` },
         });
-        
+
         if (!response.ok) throw new Error('Failed to fetch events');
-        
         const data = await response.json();
-        console.log('[Calendar] Successfully fetched events:', data);
         setEvents(data);
       } catch (error) {
         console.error('[Calendar] Error fetching events:', error);
@@ -47,78 +42,80 @@ export function Calendar() {
     fetchEvents();
   }, []);
 
-
   const year = currentDate.getFullYear();
-  const month = currentDate.getMonth(); // 0-indexed
-
-  const firstDay = new Date(year, month, 1).getDay();
+  const month = currentDate.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  const calendarDays = [];
-  for (let i = 0; i < firstDay; i++) {
-    calendarDays.push(null);
-  }
-  for (let i = 1; i <= daysInMonth; i++) {
-    calendarDays.push(i);
+//Calendar Days
+  let calendarDays: (Date | null)[] = [];
+
+  if (viewMode === 'month') {
+    const firstDay = new Date(year, month, 1).getDay();
+    for (let i = 0; i < firstDay; i++) calendarDays.push(null);
+    for (let i = 1; i <= daysInMonth; i++) {
+      calendarDays.push(new Date(year, month, i));
+    }
+  } else {
+    const currentWeekDay = currentDate.getDay();
+    const weekStartDate = new Date(currentDate);
+    weekStartDate.setDate(currentDate.getDate() - currentWeekDay);
+
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(weekStartDate);
+      date.setDate(weekStartDate.getDate() + i);
+      calendarDays.push(date);
+    }
   }
 
-  const goToPreviousMonth = () => {
-    const prevMonth = new Date(year, month - 1);
-    setCurrentDate(prevMonth);
+  const goToPrevious = () => {
+    const newDate = new Date(currentDate);
+    if (viewMode === 'month') {
+      newDate.setMonth(currentDate.getMonth() - 1);
+    } else {
+      newDate.setDate(currentDate.getDate() - 7);
+    }
+    setCurrentDate(newDate);
   };
 
-  const goToNextMonth = () => {
-    const nextMonth = new Date(year, month + 1);
-    setCurrentDate(nextMonth);
+  const goToNext = () => {
+    const newDate = new Date(currentDate);
+    if (viewMode === 'month') {
+      newDate.setMonth(currentDate.getMonth() + 1);
+    } else {
+      newDate.setDate(currentDate.getDate() + 7);
+    }
+    setCurrentDate(newDate);
   };
 
-  const handleDayClick = (day: number) => {
-    setSelectedDay(day);
+  const handleDayClick = (dateObj: Date) => {
+    setSelectedDay(dateObj.getDate());
+    setCurrentDate(dateObj);
     setShowForm(true);
   };
 
-   // Update addEvent to be async
-   const addEvent = async () => {
+  const addEvent = async () => {
     if (selectedDay && titleInput) {
-      console.log('[Calendar] Attempting to add event:', { //testing to see if the bloody event is being added(ts pmo)
-        day: selectedDay, 
-        month, 
-        year, 
-        title: titleInput, 
-        time: timeInput 
-      });
       const newEvent = {
         day: selectedDay,
-        month,
-        year,
+        month: currentDate.getMonth(),
+        year: currentDate.getFullYear(),
         title: titleInput,
-        time: timeInput,
+        time: timeInput
       };
-
       try {
         const idToken = await auth.currentUser?.getIdToken();
-        if (!idToken) {
-          console.error('No user logged in');
-          return;
-        }
+        if (!idToken) return;
 
         const response = await fetch('http://localhost:5000/api/events', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${idToken}`,
-          },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
           body: JSON.stringify(newEvent),
         });
 
         if (!response.ok) throw new Error('Failed to save event');
-        
         const savedEvent = await response.json();
-        console.log('[Calendar] Event successfully saved to backend:', savedEvent); //is da even being saveD?
         setEvents([...events, savedEvent]);
-        
-        // Reset form
-        console.log('[Calendar] Clearing form inputs');
+
         setTitleInput('');
         setTimeInput('');
         setShowForm(false);
@@ -128,76 +125,66 @@ export function Calendar() {
     }
   };
 
-  // Update deleteEvent to use event ID
   const deleteEvent = async (eventId: number) => {
-    console.log('[Calendar] Attempting to delete event ID:', eventId); //checking event itd 
     try {
       const idToken = await auth.currentUser?.getIdToken();
-      if (!idToken) {
-        console.error('No user logged in');
-        return;
-      }
+      if (!idToken) return;
 
       const response = await fetch(`http://localhost:5000/api/events/${eventId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${idToken}`,
-        },
+        headers: { 'Authorization': `Bearer ${idToken}` },
       });
 
       if (!response.ok) throw new Error('Failed to delete event');
-      
-      console.log('[Calendar] Event successfully deleted from backend'); //checking if event is deleted
       setEvents(events.filter(event => event.id !== eventId));
     } catch (error) {
       console.error('Error deleting event:', error);
     }
   };
 
-  const getEventsForDay = (day: number) => {
+  const getEventsForDay = (day: number, monthParam: number, yearParam: number) => {
     return events.filter(
-      (event) => event.day === day && event.month === month && event.year === year
+      (event) => event.day === day && event.month === monthParam && event.year === yearParam
     );
   };
 
   return (
-    // Set the container's position to relative so the absolute positioned child is in context
     <div style={{ position: 'relative' }}>
       <div>
-        <button onClick={goToPreviousMonth}>Previous</button>
+        <button onClick={goToPrevious}>Previous</button>
         <span>
-          {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+          {viewMode === 'month'
+            ? currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })
+            : `Week of ${calendarDays[0]?.toLocaleDateString()}`}
         </span>
-        <button onClick={goToNextMonth}>Next</button>
+        <button onClick={goToNext}>Next</button>
+        <button onClick={() => setViewMode(viewMode === 'month' ? 'week' : 'month')}>
+          Switch to {viewMode === 'month' ? 'Weekly' : 'Monthly'} View
+        </button>
       </div>
 
-      <div className="calendar-grid">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-          <div key={day} className="day-header">
-            {day}
-          </div>
+      <div className={`calendar-grid ${viewMode === 'week' ? 'week-view' : ''}`}>
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+          <div key={day} className="day-header">{day}</div>
         ))}
 
-        {calendarDays.map((day, index) => (
+        {calendarDays.map((dateObj, index) => (
           <div
             key={index}
-            className="calendar-cell"
-            onClick={() => day && handleDayClick(day)}
+            className={`calendar-cell ${
+              dateObj && dateObj.getMonth() !== month ? 'outside-month' : ''
+            }`}
+            onClick={() => dateObj && handleDayClick(dateObj)}
           >
-            <div>{day}</div>
-            {day && (
+            <div>{dateObj ? dateObj.getDate() : ''}</div>
+            {dateObj && (
               <div className="event-list">
-                {getEventsForDay(day)
+                {getEventsForDay(dateObj.getDate(), dateObj.getMonth(), dateObj.getFullYear())
                   .sort((a, b) => a.time.localeCompare(b.time))
-                  .map((event, i) => {
-                    const formattedTime = new Date(`1970-01-01T${event.time}`).toLocaleTimeString(
-                      [], { 
-                        hour: 'numeric',
-                        minute: '2-digit' 
-                      }
-                    );
+                  .map(event => {
+                    const formattedTime = new Date(`1970-01-01T${event.time}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
                     return (
-                      <div key={i} className="event-preview">
+                      <div key={event.id} className="event-preview">
                         <div className="event-wrapper">
                           <div className="event-content">
                             <div><strong>{event.title}</strong></div>
