@@ -7,6 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import cors from 'cors';
 import axios from 'axios';
+import { AnyARecord } from 'dns';
 
 
 
@@ -360,6 +361,136 @@ app.delete('/api/events/:id', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error deleting event:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Auto-schedule 3 hobby events
+app.post('/api/auto-schedule-hobbies', async (req: Request, res: Response): Promise<void> => {
+  console.log('\n[Server] POST /api/auto-schedule-hobbies received');
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'Unauthorized: No token provided' });
+    return;
+  }
+  const idToken = authHeader.split('Bearer ')[1];
+
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const firebaseUid = decodedToken.uid;
+
+    const userResult = await pool.query(
+      'SELECT id FROM users WHERE firebase_uid = $1',
+      [firebaseUid]
+    );
+    if (userResult.rowCount === 0) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    const userId = userResult.rows[0].id;
+
+    // Step 1: Fetch user's existing events
+    const eventsResult = await pool.query(
+      'SELECT day, month, year, time FROM events WHERE user_id = $1',
+      [userId]
+    );
+    const existingEvents = eventsResult.rows;
+
+    console.log(`[Server] Found ${existingEvents.length} existing events for auto-scheduling.`);
+
+    // Step 2: Find 3 free time slots
+    const findFreeSlots = (): { day: number; month: number; year: number; time: string }[] => {
+      const slots: { day: number; month: number; year: number; time: string }[] = [];
+      const now = new Date();
+
+      const groupedEvents = new Map<string, Set<string>>();
+
+      for (const event of existingEvents) {
+        const key = `${event.year}-${event.month}-${event.day}`;
+        if (!groupedEvents.has(key)) groupedEvents.set(key, new Set());
+        groupedEvents.get(key)?.add(event.time);
+      }
+
+      for (let offset = 0; offset < 7 && slots.length < 3; offset++) {
+        const date = new Date(now);
+        date.setDate(now.getDate() + offset);
+        const day = date.getDate();
+        const month = date.getMonth();
+        const year = date.getFullYear();
+        const key = `${year}-${month}-${day}`;
+        const takenTimes = groupedEvents.get(key) || new Set();
+
+        const preferredTimes = ['12:00', '15:00', '18:00'];
+
+        for (const time of preferredTimes) {
+          if (!takenTimes.has(time)) {
+            slots.push({ day, month, year, time });
+            break;
+          }
+        }
+      }
+
+      return slots;
+    };
+
+    const availableSlots = findFreeSlots();
+
+    if (availableSlots.length < 3) {
+      res.status(400).json({ error: 'Not enough free time slots available.' });
+      return;
+    }
+
+    console.log('[Server] Available slots found:', availableSlots);
+
+    // Step 3: Generate hobby suggestions (Groq API)
+    const hobbySuggestions = await Promise.all(
+      availableSlots.map(async () => {
+        const response = await axios.post<GroqResponse>(
+          'https://api.groq.com/openai/v1/chat/completions',
+          {
+            model: process.env.GROQ_MODEL,
+            messages: [{
+              role: "user",
+              content: `Suggest a fun hobby activity that can be completed in 30 minutes, appropriate for an intermediate hobbyist looking to relax.`
+            }]
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        return response.data.choices[0].message.content.trim();
+      })
+    );
+
+    console.log('[Server] Hobby suggestions generated:', hobbySuggestions);
+
+    // Step 4: Insert hobby events into database
+    const insertedEvents = [];
+
+    for (let i = 0; i < availableSlots.length; i++) {
+      const { day, month, year, time } = availableSlots[i];
+      const title = hobbySuggestions[i];
+
+      const insertQuery = `
+        INSERT INTO events (user_id, day, month, year, title, time)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING *;
+      `;
+      const values = [userId, day, month, year, title, time];
+      const result = await pool.query(insertQuery, values);
+      insertedEvents.push(result.rows[0]);
+    }
+
+    res.status(201).json({ message: 'Successfully scheduled 3 hobby activities!', insertedEvents });
+
+    console.log('[Server] Successfully created 3 new hobby events!');
+    
+  } catch (error: any) {
+    console.error('Error auto-scheduling hobbies:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Internal server error while auto-scheduling hobbies' });
   }
 });
 
