@@ -1,67 +1,64 @@
 import React, { useState } from 'react';
 import { Button, Text, Card, Loader, Container, Title } from '@mantine/core';
 import axios from 'axios';
-import { getAuth } from 'firebase/auth';
-
+import { auth } from '../../../firebase-config'; // Adjust the path if needed
 
 const HobbySuggestion: React.FC = () => {
   const [hobbySuggestion, setHobbySuggestion] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
 
-  // Hardcoded dummy hobby data
-  // const hobbies = [
-  //   {
-  //     hobby: "drawing",
-  //     skillLevel: "intermediate",
-  //     goal: "have fun",
-  //   },
-  //   {
-  //     hobby: "hiking",
-  //     skillLevel: "beginner",
-  //     goal: "build endurance",
-  //   },
-  // ];
-
-  const generateHobby = async () => {
+  const scheduleHobbies = async () => {
     setLoading(true);
     try {
-      const auth = getAuth();
       const user = auth.currentUser;
       if (!user) {
         setHobbySuggestion('No user signed in.');
         return;
       }
       const idToken = await user.getIdToken();
-      console.log('idToken:', idToken); // Check the token here
-  
-      const response = await axios.post<{ suggestion: string }>(
-        'http://localhost:5000/api/generate-hobby',
-        {}, // No hobby data; server fetches from DB
+
+      const response = await axios.post(
+        'http://localhost:5000/api/auto-schedule-hobbies',
+        {},
         {
           headers: {
-            'Content-Type': 'application/json',
             Authorization: `Bearer ${idToken}`,
           },
         }
-      );      
-      setHobbySuggestion(response.data.suggestion);
+      );
+
+      if (response.status === 201) {
+        setHobbySuggestion('🎉 Successfully scheduled 3 hobby events!');
+      } else {
+        setHobbySuggestion('Something went wrong. Try again.');
+      }
     } catch (error) {
-      console.error('Error fetching hobby suggestion:', error);
-      setHobbySuggestion('Failed to generate a suggestion. Try again later.');
+      console.error('Error scheduling hobbies:', error);
+      setHobbySuggestion('Failed to schedule hobbies.');
     } finally {
       setLoading(false);
     }
-  };  
+  };
 
   return (
     <Container size="sm" mt="xl">
-      <Title order={2} align="center">Hobby Suggestion</Title>
+      <Title order={2} align="center" mb="lg">
+        Hobby Activity Scheduler
+      </Title>
+
       <Card shadow="sm" p="lg" mt="md" withBorder>
-        <Button fullWidth onClick={generateHobby} disabled={loading}>
-          {loading ? <Loader size="sm" /> : 'Generate a hobby suggestion'}
+        <Button
+          fullWidth
+          onClick={scheduleHobbies}
+          disabled={loading}
+          variant="gradient"
+          gradient={{ from: 'teal', to: 'blue', deg: 60 }}
+        >
+          {loading ? <Loader size="sm" color="white" /> : 'Generate & Schedule Hobby Activities'}
         </Button>
+
         {hobbySuggestion && (
-          <Text align="center" mt="md" weight={500}>
+          <Text align="center" mt="md" weight={500} color="green">
             {hobbySuggestion}
           </Text>
         )}
