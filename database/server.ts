@@ -130,9 +130,13 @@ app.post('/api/hobbies', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+
+
 /*
 -----------------------------------------------------------Handles AI!!! AND generates hobby.-----------------------------------------------------------
 */
+
+/*
 
 interface GroqResponse {
   choices: Array<{
@@ -224,6 +228,7 @@ app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<voi
   }
 });
 
+*/
 
 /*
 -----------------------------------------------------------Handles Calendar to DB.-----------------------------------------------------------
@@ -364,7 +369,7 @@ app.delete('/api/events/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Auto-schedule 3 hobby events
+// Auto-schedule 3 hobby events using user's existing hobbies
 app.post('/api/auto-schedule-hobbies', async (req: Request, res: Response): Promise<void> => {
   console.log('\n[Server] POST /api/auto-schedule-hobbies received');
 
@@ -389,20 +394,33 @@ app.post('/api/auto-schedule-hobbies', async (req: Request, res: Response): Prom
     }
     const userId = userResult.rows[0].id;
 
-    // Step 1: Fetch user's existing events
+    // Step 1: Fetch user's hobbies
+    const hobbyResult = await pool.query(
+      'SELECT hobby, skill_level, goal FROM hobbies WHERE user_id = $1',
+      [userId]
+    );
+    const userHobbies = hobbyResult.rows;
+
+    if (userHobbies.length === 0) {
+      res.status(400).json({ error: 'No hobbies found for this user' });
+      return;
+    }
+
+    const existingHobbies = userHobbies.map(h => `"${h.hobby}"`).join(', ');
+
+    console.log(`[Server] Found hobbies for user ${userId}: ${existingHobbies}`);
+
+    // Step 2: Fetch existing events
     const eventsResult = await pool.query(
       'SELECT day, month, year, time FROM events WHERE user_id = $1',
       [userId]
     );
     const existingEvents = eventsResult.rows;
 
-    console.log(`[Server] Found ${existingEvents.length} existing events for auto-scheduling.`);
-
-    // Step 2: Find 3 free time slots
+    // Helper function: find free slots
     const findFreeSlots = (): { day: number; month: number; year: number; time: string }[] => {
       const slots: { day: number; month: number; year: number; time: string }[] = [];
       const now = new Date();
-
       const groupedEvents = new Map<string, Set<string>>();
 
       for (const event of existingEvents) {
@@ -442,16 +460,17 @@ app.post('/api/auto-schedule-hobbies', async (req: Request, res: Response): Prom
 
     console.log('[Server] Available slots found:', availableSlots);
 
-    // Step 3: Generate hobby suggestions (Groq API)
+    // Step 3: Generate hobby suggestions (using user's hobbies as context)
     const hobbySuggestions = await Promise.all(
       availableSlots.map(async () => {
-        const response = await axios.post<GroqResponse>(
+        const aiResponse = await axios.post<GroqResponse>(
           'https://api.groq.com/openai/v1/chat/completions',
           {
             model: process.env.GROQ_MODEL,
             messages: [{
               role: "user",
-              content: `Suggest a fun hobby activity that can be completed in 30 minutes, appropriate for an intermediate hobbyist looking to relax.`
+              content: `Suggest a fun and engaging hobby activity that can be done in 15-30 minutes daily, considering the user's existing hobbies: ${existingHobbies}.
+              Format: "[Hobby Name] - [1-sentence description]. [Connection to existing hobbies]" Example: "Quick Sketching - 10-minute gesture drawings of people in cafes. Builds observation skills from your portrait photography hobby."`
             }]
           },
           {
@@ -461,7 +480,9 @@ app.post('/api/auto-schedule-hobbies', async (req: Request, res: Response): Prom
             }
           }
         );
-        return response.data.choices[0].message.content.trim();
+
+        const suggestion = aiResponse.data.choices[0].message.content.trim();
+        return suggestion;
       })
     );
 
@@ -487,12 +508,13 @@ app.post('/api/auto-schedule-hobbies', async (req: Request, res: Response): Prom
     res.status(201).json({ message: 'Successfully scheduled 3 hobby activities!', insertedEvents });
 
     console.log('[Server] Successfully created 3 new hobby events!');
-    
+
   } catch (error: any) {
     console.error('Error auto-scheduling hobbies:', error.response?.data || error.message);
     res.status(500).json({ error: 'Internal server error while auto-scheduling hobbies' });
   }
 });
+
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
