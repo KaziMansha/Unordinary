@@ -46,7 +46,6 @@ export function Calendar() {
   const month = currentDate.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-//Calendar Days
   let calendarDays: (Date | null)[] = [];
 
   if (viewMode === 'month') {
@@ -148,85 +147,124 @@ export function Calendar() {
     );
   };
 
+  const calculateTop = (time: string) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    const hourHeight = 40;
+    return (hours * hourHeight) + (minutes / 60) * hourHeight;
+  };
+
   return (
     <div style={{ position: 'relative' }}>
-      <div>
-        <button onClick={goToPrevious}>Previous</button>
-        <span>
-          {viewMode === 'month'
-            ? currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })
-            : `Week of ${calendarDays[0]?.toLocaleDateString()}`}
-        </span>
-        <button onClick={goToNext}>Next</button>
-        <button onClick={() => setViewMode(viewMode === 'month' ? 'week' : 'month')}>
-          Switch to {viewMode === 'month' ? 'Weekly' : 'Monthly'} View
-        </button>
+      <div className="calendar-topbar">
+        <div className="nav-controls">
+          <button onClick={goToPrevious}>←</button>
+          <span className="current-period">
+            {viewMode === 'month'
+              ? currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })
+              : `Week of ${calendarDays[0]?.toLocaleDateString()}`}
+          </span>
+          <button onClick={goToNext}>→</button>
+        </div>
+        
+        <div className="view-toggle">
+          <button onClick={() => setViewMode(viewMode === 'month' ? 'week' : 'month')}>
+            {viewMode === 'month' ? 'Week View' : 'Month View'}
+          </button>
+        </div>
       </div>
 
-      <div className={`calendar-grid ${viewMode === 'week' ? 'week-view' : ''}`}>
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="day-header">{day}</div>
-        ))}
-
-        {calendarDays.map((dateObj, index) => (
-          <div
-            key={index}
-            className={`calendar-cell ${
-              dateObj && dateObj.getMonth() !== month ? 'outside-month' : ''
-            }`}
-            onClick={() => dateObj && handleDayClick(dateObj)}
-          >
-            <div>{dateObj ? dateObj.getDate() : ''}</div>
-            {dateObj && (
-              <div className="event-list">
-                {getEventsForDay(dateObj.getDate(), dateObj.getMonth(), dateObj.getFullYear())
-                  .sort((a, b) => a.time.localeCompare(b.time))
-                  .map(event => {
-                    const formattedTime = new Date(`1970-01-01T${event.time}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-                    return (
+      {/* Monthly View */}
+      {viewMode === 'month' && (
+        <div className="calendar-grid">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+            <div key={day} className="day-header">{day}</div>
+          ))}
+          {calendarDays.map((dateObj, index) => (
+            <div
+              key={index}
+              className={`calendar-cell ${dateObj && dateObj.getMonth() !== month ? 'outside-month' : ''}`}
+              onClick={() => dateObj && handleDayClick(dateObj)}
+            >
+              <div>{dateObj ? dateObj.getDate() : ''}</div>
+              {dateObj && (
+                <div className="event-list">
+                  {getEventsForDay(dateObj.getDate(), dateObj.getMonth(), dateObj.getFullYear())
+                    .sort((a, b) => a.time.localeCompare(b.time))
+                    .map(event => (
                       <div key={event.id} className="event-preview">
-                        <div className="event-wrapper">
-                          <div className="event-content">
-                            <div><strong>{event.title}</strong></div>
-                            <div>{formattedTime}</div>
-                          </div>
-                          <button
-                            className="delete-button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteEvent(event.id);
-                            }}
-                            title="Delete event"
-                          >
-                            ×
-                          </button>
-                        </div>
+                        <span>{event.title}</span>
+                        <button
+                          className="delete-button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteEvent(event.id);
+                          }}
+                          title="Delete event"
+                        >
+                          ×
+                        </button>
                       </div>
-                    );
-                  })}
+                    ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Weekly View */}
+      {viewMode === 'week' && (
+        <div className="week-container">
+          <div className="week-header">
+            <div className="time-column-header"></div>
+            {calendarDays.map((dateObj, index) => (
+              <div key={index} className="week-day-header">
+                {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dateObj.getDay()]} {dateObj.getDate()}
               </div>
-            )}
+            ))}
           </div>
-        ))}
-      </div>
+
+          <div className="week-grid">
+            <div className="time-column">
+              {Array.from({ length: 24 }, (_, i) => (
+                <div key={i} className="time-slot">
+                  {i === 0 ? '12 AM' : i < 12 ? `${i} AM` : i === 12 ? '12 PM' : `${i - 12} PM`}
+                </div>
+              ))}
+            </div>
+
+            {calendarDays.map((dateObj, index) => (
+              <div
+                key={index}
+                className="week-day-column"
+                onClick={() => handleDayClick(dateObj)}
+              >
+                <div className="day-time-slots">
+                  {getEventsForDay(dateObj.getDate(), dateObj.getMonth(), dateObj.getFullYear())
+                    .map(event => {
+                      const topPosition = calculateTop(event.time);
+                      return (
+                        <div
+                          key={event.id}
+                          className="week-event"
+                          style={{ top: `${topPosition}px` }}
+                        >
+                          {event.title}
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {showForm && (
         <div className="event-form">
-          <h3>
-            Add Event for {selectedDay}{' '}
-            {currentDate.toLocaleString('default', { month: 'long' })}
-          </h3>
-          <input
-            type="text"
-            placeholder="Event title"
-            value={titleInput}
-            onChange={(e) => setTitleInput(e.target.value)}
-          />
-          <input
-            type="time"
-            value={timeInput}
-            onChange={(e) => setTimeInput(e.target.value)}
-          />
+          <h3>Add Event for {selectedDay} {currentDate.toLocaleString('default', { month: 'long' })}</h3>
+          <input type="text" placeholder="Event title" value={titleInput} onChange={(e) => setTitleInput(e.target.value)} />
+          <input type="time" value={timeInput} onChange={(e) => setTimeInput(e.target.value)} />
           <button onClick={addEvent}>Add Event</button>
           <button onClick={() => setShowForm(false)}>Cancel</button>
         </div>
