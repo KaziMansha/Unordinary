@@ -14,17 +14,43 @@ const HobbySurvey: React.FC = () => {
   const [hobbies, setHobbies] = useState<Hobby[]>([{ hobby: "", skillLevel: "", goal: "" }]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // Prevent form from refreshing the page
+    
+    // Basic validation: Check if all hobbies have valid values
+    if (hobbies.some(hobby => !hobby.hobby || !hobby.skillLevel || !hobby.goal)) {
+      alert("Please fill out all fields before submitting.");
+      return;
+    }
+  
+    // You can send data to your backend (Example: using fetch)
     try {
-      // Your logic to submit data, i.e., send data to server
-      console.log("Submitted hobbies:", hobbies);
+      // Replace with your actual API endpoint and logic
+      const response = await fetch("http://localhost:5000/api/hobbies", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(hobbies),
+      });
+  
+      if (!response.ok) {
+        throw new Error("Failed to submit hobbies.");
+      }
+  
+      const data = await response.json();
+      console.log("Hobbies submitted successfully:", data);
+  
+      // After a successful submission, set the form state to submitted
       setSubmitted(true);
+  
+      // Redirect to another page after successful form submission (Example: Dashboard)
       navigate("/Dashboard");
     } catch (error) {
       console.error("Error submitting hobbies:", error);
+      alert("There was an error submitting your hobbies. Please try again.");
     }
   };
-
+  
   const handleChange = (index: number, field: keyof Hobby, value: string) => {
     const updatedHobbies = [...hobbies];
     updatedHobbies[index][field] = value;  // TypeScript will now recognize this as safe
