@@ -1,77 +1,105 @@
-.mantine-Combobox-dropdown {
-    position: absolute !important;
-    top: auto !important;
-    bottom: auto !important;
-    transform: none !important;
-    inset: unset !important;
-    z-index: 9999 !important;
-  }
-
-.survey-container,
-.survey-form {
-  overflow: visible;
-  position: relative;
-  z-index: 1;
-}
-  
-
-.mantine-Select-rightSection {
-    svg {
-      width: 16px;
-      height: 16px;
-    }
-  }  
-
+/* Survey Container */
 .survey-container {
-    padding-top: 4rem;
-    padding-bottom: 4rem;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  }
-  
-  .survey-title {
-    text-align: center;
-    margin-bottom: 2rem;
-    color: #1f0044;
-  }
-  
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Title of the Survey */
+.survey-title {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: #1f0044;
+}
+
+/* Form Container */
+.survey-form {
+  background-color: #fdfdfd;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e4e4e4;
+}
+
+/* Each Section for a Hobby */
+.survey-hobby-section {
+  background-color: #ffffff;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+}
+
+/* Title within each Hobby Section */
+.hobby-section-title {
+  color: #7c5dfa;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+/* Remove Button for Hobby */
+.remove-button {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  border-radius: 5px;
+}
+
+.remove-button:hover {
+  background-color: #d32f2f;
+}
+
+/* Input Fields */
+input, select {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+/* Button Styles */
+.add-button, .submit-button {
+  display: block;
+  margin-bottom: 1rem;
+  width: 100%;
+  background-color: #7c5dfa;
+  color: white;
+  padding: 0.8rem 2rem;
+  font-size: 1rem;
+  cursor: pointer;
+  border: none;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.add-button:hover, .submit-button:hover {
+  background-color: #6038d3;
+}
+
+/* Thank You Message */
+.thank-you-message {
+  text-align: center;
+  color: green;
+  font-size: 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
   .survey-form {
-    background-color: #fdfdfd;
-    padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
-    border: 1px solid #e4e4e4;
-  }
-  
-  .survey-hobby-section {
-    background-color: #ffffff;
     padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    border: 1px solid #ddd;
-    border-radius: 10px;
   }
-  
-  .hobby-section-title {
-    color: #7c5dfa;
+
+  .survey-hobby-section {
+    padding: 1rem;
   }
-  
-  .submit-button {
-    background-color: #7c5dfa;
-    color: white;
-    transition: background-color 0.3s ease;
-  }
-  
-  .submit-button:hover {
-    background-color: #6038d3;
-  }
-  
-  /* Responsive */
-  @media (max-width: 768px) {
-    .survey-form {
-      padding: 1.5rem;
-    }
-  
-    .survey-hobby-section {
-      padding: 1rem;
-    }
-  }
-  
+}
