@@ -12,3 +12,7 @@
     flex: 1;
     min-width: 0;
 }
+
+.dashboard-calendar {
+    flex-grow: 1;
+}

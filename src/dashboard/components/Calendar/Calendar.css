@@ -87,3 +87,11 @@
   background-color: #f0f0f0;
   color: #999;
 }
+
+.hobby-suggestion-container {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 300px;
+  z-index: 100;
+}
