@@ -3,14 +3,19 @@ import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase-config';
 import { useNavigate } from 'react-router-dom';
 import { Calendar } from './components/Calendar/Calendar'
-import HobbySuggestion from './components/HobbySuggestion/HobbySuggestion';
-import Sidebar from './components/Sidebar/Sidebar.tsx';
+import Sidebar from './components/Sidebar/Sidebar';
 import { NavBar } from '../home/components/Navbar/NavbarDash';
 import './Dashboard.css'
 
 const DashboardPage: React.FC = () => {
     const [user, setUser] = useState<any>(null);
-      const navigate = useNavigate();
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const navigate = useNavigate();
+
+    const refreshEvents = () => {
+      console.log('Refresh triggered - incrementing counter');
+      setRefreshTrigger(prev => prev + 1);
+    };
     
       useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -47,18 +52,17 @@ const DashboardPage: React.FC = () => {
         return <div>Loading...</div>;
       }
     
-    return (
-        <>
+      return (
         <div className='dashboard-wrapper'>
-        <NavBar />
-        <div className='dashboard-component-wrapper'>
-          <Sidebar />
-            <div className='dashboard-calendar'>
-              <Calendar />
+            <NavBar />
+            <div className='dashboard-component-wrapper'>
+                <Sidebar onEventAdded={refreshEvents} />
+                <div className='dashboard-calendar'>
+                  <Calendar refreshTrigger={refreshTrigger} />
+                </div>
             </div>
         </div>
-        </div>
-        </>
+        
     )
 }
 

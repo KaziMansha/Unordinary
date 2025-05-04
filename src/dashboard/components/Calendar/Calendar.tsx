@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react';
 import { auth } from '../../../firebase-config.ts';
+//import HobbySuggestion from '../HobbySuggestion/HobbySuggestion';
 import './Calendar.css';
 
-export function Calendar() {
+interface CalendarProps {
+  refreshTrigger?: number;
+}
+
+export function Calendar({ refreshTrigger }: CalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
 
@@ -22,25 +27,27 @@ export function Calendar() {
   const [timeInput, setTimeInput] = useState('');
 
   useEffect(() => {
+    console.log('Refresh trigger changed:', refreshTrigger);
     const fetchEvents = async () => {
-      try {
-        const idToken = await auth.currentUser?.getIdToken();
-        if (!idToken) return;
+        try {
+            const idToken = await auth.currentUser?.getIdToken();
+            if (!idToken) return;
 
-        const response = await fetch('http://localhost:5000/api/events', {
-          headers: { 'Authorization': `Bearer ${idToken}` },
-        });
+            const response = await fetch('http://localhost:5000/api/events', {
+                headers: { 'Authorization': `Bearer ${idToken}` },
+            });
 
-        if (!response.ok) throw new Error('Failed to fetch events');
-        const data = await response.json();
-        setEvents(data);
-      } catch (error) {
-        console.error('[Calendar] Error fetching events:', error);
-      }
+            if (!response.ok) throw new Error('Failed to fetch events');
+            const data = await response.json();
+            setEvents(data); // This updates the calendar UI
+        } catch (error) {
+            console.error('[Calendar] Error fetching events:', error);
+        }
     };
 
     fetchEvents();
-  }, []);
+}, [refreshTrigger]);
+
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
