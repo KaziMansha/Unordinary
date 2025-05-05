@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';   /* ← NEW */
 import './FeedbackForm.css';
 
-const hobbyOptions = ['Reading', 'Chess', 'Painting', 'Hiking', 'Cooking'];
+const hobbyOptions = ['Reading', 'Chess', 'Painting'];
 
 interface HobbyRow {
   hobby: string;
@@ -9,60 +10,56 @@ interface HobbyRow {
 }
 
 export function FeedbackForm() {
+  const navigate = useNavigate();                /* ← NEW */
+
   const [rows, setRows] = useState<HobbyRow[]>([
     { hobby: '', rating: 7 },
   ]);
-  const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
 
-  /* ---------- helpers ---------- */
-  const unusedHobbies = (currentIndex: number) =>
+  /* ---------- helpers & handlers ---------- */
+  const unusedHobbies = (idx: number) =>
     hobbyOptions.filter(
-      (h) => !rows.some((r, i) => r.hobby === h && i !== currentIndex)
+      (h) => !rows.some((r, i) => r.hobby === h && i !== idx)
     );
 
-  /* ---------- handlers ---------- */
   const updateRow =
-    (index: number, field: keyof HobbyRow) =>
+    (idx: number, field: keyof HobbyRow) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const copy = [...rows];
-      copy[index] = {
-        ...copy[index],
+      copy[idx] = {
+        ...copy[idx],
         [field]:
           field === 'rating' ? Number(e.target.value) : e.target.value,
       };
-      // If changing hobby dropdown duplicates another row, clear the duplicate
+      // prevent duplicate selections
       if (field === 'hobby') {
         const chosen = e.target.value;
         copy.forEach((r, i) => {
-          if (i !== index && r.hobby === chosen) copy[i].hobby = '';
+          if (i !== idx && r.hobby === chosen) copy[i].hobby = '';
         });
       }
       setRows(copy);
     };
 
   const addRow = () => setRows([...rows, { hobby: '', rating: 7 }]);
-
   const removeRow = (idx: number) =>
     setRows(rows.filter((_, i) => i !== idx));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // validation: all hobby dropdowns filled and unique
     if (rows.some((r) => !r.hobby)) {
       setError('Please choose a hobby for every row.');
       return;
     }
     setError('');
     console.log('Submitted ratings:', rows);
-    // TODO: POST to server
-    setSubmitted(true);
+    /* TODO: POST to server */
+
+    navigate('/Dashboard', { replace: true });
   };
 
   /* ---------- render ---------- */
-  if (submitted)
-    return <p className="fb-thanks">Thank you for rating your hobbies!</p>;
-
   return (
     <div className="fb-wrapper">
       <h2 className="fb-title">Rate your hobbies</h2>
@@ -86,7 +83,7 @@ export function FeedbackForm() {
             </label>
 
             <label className="fb-label fb-slider">
-              Rating&nbsp;<span>{row.rating}</span>
+              Rating <span>{row.rating}</span>
               <input
                 type="range"
                 min={1}
@@ -99,8 +96,8 @@ export function FeedbackForm() {
             {rows.length > 1 && (
               <button
                 type="button"
-                onClick={() => removeRow(idx)}
                 className="fb-remove"
+                onClick={() => removeRow(idx)}
               >
                 ×
               </button>
@@ -114,7 +111,7 @@ export function FeedbackForm() {
           onClick={addRow}
           disabled={rows.length === hobbyOptions.length}
         >
-          + Add another hobby
+          + Add another hobby
         </button>
 
         {error && <p className="fb-error">{error}</p>}
