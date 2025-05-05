@@ -141,84 +141,109 @@ interface GroqResponse {
   }>;
 }
 
-if (!process.env.GROQ_API_KEY || !process.env.GROQ_MODEL) {
-  console.error("Missing GROQ_API_KEY or GROQ_MODEL in .env");
-  process.exit(1);
+interface GroqSuggestion {
+  description: string;
+  hobby: string;
+  date: string; // YYYY-MM-DD
 }
 
 app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<void> => {
-  // Step 1: Verify the Firebase token from the Authorization header
-  console.log('Received headers:', req.headers);
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    res.status(401).json({ error: 'Unauthorized: No token provided' });
+  if (!authHeader?.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'Unauthorized' });
     return;
   }
-  const idToken = authHeader.split('Bearer ')[1];
-
-  
 
   try {
+    // Verify user
+    const idToken = authHeader.split('Bearer ')[1];
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     const firebaseUid = decodedToken.uid;
-    if (!firebaseUid) {
-      res.status(400).json({ error: 'Invalid token data' });
-      return;
-    }
 
-    // Step 2: Lookup the user record to obtain internal user ID
-    const userResult = await pool.query('SELECT id FROM users WHERE firebase_uid = $1', [firebaseUid]);
+    // Get user ID
+    const userResult = await pool.query(
+      'SELECT id FROM users WHERE firebase_uid = $1', 
+      [firebaseUid]
+    );
     if (userResult.rowCount === 0) {
       res.status(404).json({ error: 'User not found' });
       return;
     }
     const userId = userResult.rows[0].id;
 
-    // Step 3: Query the hobbies table for that user
-    const hobbyResult = await pool.query(
-      'SELECT hobby, skill_level, goal FROM hobbies WHERE user_id = $1',
+    // Step 1: Find 3 free days in the next 2 weeks
+    const eventsResult = await pool.query(
+      `SELECT day, month, year FROM events 
+       WHERE user_id = $1 
+       AND (year, month, day) BETWEEN 
+         (EXTRACT(YEAR FROM NOW()), EXTRACT(MONTH FROM NOW()), EXTRACT(DAY FROM NOW())) 
+         AND 
+         (EXTRACT(YEAR FROM NOW() + INTERVAL '14 days'), EXTRACT(MONTH FROM NOW() + INTERVAL '14 days'), EXTRACT(DAY FROM NOW() + INTERVAL '14 days'))`,
       [userId]
     );
-    const userHobbies = hobbyResult.rows; // This should be an array of objects
 
-    // Check if the user has any hobbies
-    if (userHobbies.length === 0) {
-      res.status(400).json({ error: 'No hobbies found for this user' });
+    // Find dates without events
+    const busyDates = new Set(
+      eventsResult.rows.map(e => 
+        `${e.year}-${String(e.month + 1).padStart(2, '0')}-${String(e.day).padStart(2, '0')}`
+      )
+    );
+
+    const freeDates: string[] = [];
+    const today = new Date();
+    for (let i = 0; freeDates.length < 3 && i < 14; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      const dateString = date.toISOString().split('T')[0];
+      if (!busyDates.has(dateString)) {
+        freeDates.push(dateString);
+      }
+    }
+
+    if (freeDates.length < 3) {
+      res.status(400).json({ error: 'Not enough free days found' });
       return;
     }
 
+    // Step 2: Get user hobbies for AI context
+    const hobbiesResult = await pool.query(
+      'SELECT hobby, skill_level, goal FROM hobbies WHERE user_id = $1',
+      [userId]
+    );
+    const hobbies = hobbiesResult.rows;
 
-    const existingHobbies = userHobbies.map(h => `"${h.hobby}"`).join(', ');
-    
-    // Step 4: Call your AI suggestion service with the user's hobbies.
-    // Replace this with your actual call to your AI/Groq API.
-    // For demonstration, we'll assume you call an external AI service.
+    // Step 3: Generate AI suggestions
     const aiResponse = await axios.post<GroqResponse>(
-      'https://api.groq.com/openai/v1/chat/completions', // Example Groq endpoint
+      'https://api.groq.com/openai/v1/chat/completions',
       {
         model: process.env.GROQ_MODEL,
         messages: [{
           role: "user",
-          content: `Suggest a fun and engaging hobby avtivity that can be done in 15-30 minutes daily, 
-                considering the user's existing hobbies: ${existingHobbies}.
-                Format: "[Hobby Name] - [1-sentence description]. [Connection to existing hobbies]"
-                Example: 
-                "Quick Sketching - 10-minute gesture drawings of people in cafes. 
-                Builds observation skills from your portrait photography hobby."`
+          content: `Suggest 3 different hobby activities for these dates: ${freeDates.join(', ')}.
+          User's existing hobbies: ${hobbies.map(h => `${h.hobby} (${h.skill_level}, goal: ${h.goal})`).join(', ')}.
+          Format each suggestion EXACTLY like:
+          [date]|[Hobby Name]|[1-sentence description connecting to existing hobbies]
+          
+          Example:
+          2023-10-15|Urban Sketching|Quick 15-minute sketches of cityscapes to build observation skills from photography`
         }]
       },
-      {
-        headers: {
-          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      }
+      { headers: { 'Authorization': `Bearer ${process.env.GROQ_API_KEY}` } }
     );
-    const suggestion = aiResponse.data.choices[0].message.content;
 
-    res.status(200).json({ suggestion });
+    // Parse AI response
+    const suggestions = aiResponse.data.choices[0].message.content
+      .split('\n')
+      .filter(line => line.trim())
+      .slice(0, 3)
+      .map(line => {
+        const [date, hobby, description] = line.split('|');
+        return { date, hobby, description };
+      });
+
+    res.status(200).json({ suggestions });
   } catch (error) {
-    console.error('Error generating hobby suggestion:', error);
+    console.error('Error generating suggestions:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

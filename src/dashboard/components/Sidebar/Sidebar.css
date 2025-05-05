@@ -110,3 +110,22 @@ body {
   margin-top: 1rem;
   text-align: center;
 }
+
+/* Added styles for new suggestion popup */
+.popup-content h3 {
+  margin: 0 0 1rem 0;
+  text-align: center;
+  color: #333;
+}
+
+.popup-content div {
+  margin-bottom: 1rem;
+}
+
+.popup-content button {
+  transition: opacity 0.2s;
+}
+
+.popup-content button:hover {
+  opacity: 0.9;
+}

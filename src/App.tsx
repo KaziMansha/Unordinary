@@ -19,7 +19,7 @@ function App() {
           <Route path="/feedback" element={<FeedbackForm />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/hobbiesurvey" element={<HobbySurvey />} />
-          <Route path="/hobbysuggestion" element={<HobbySuggestion />} />
+          
         </Routes>
       </BrowserRouter>
     </MantineProvider>
