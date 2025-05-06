@@ -66,7 +66,7 @@ export function NavBar() {
                     <Link to="*">Dashboard</Link>
                 </li>
                 <li>
-                    <Link to="*">Profile</Link>
+                    <Link to="/feedback">Feedback</Link>
                 </li>
                 <li>
                     <Link to="*">About</Link>
