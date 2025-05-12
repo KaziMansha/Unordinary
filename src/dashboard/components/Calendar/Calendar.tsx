@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { auth } from '../../../firebase-config.ts';
-//import HobbySuggestion from '../HobbySuggestion/HobbySuggestion';
 import './Calendar.css';
 
 interface CalendarProps {
@@ -18,6 +17,7 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
     year: number;
     title: string;
     time: string;
+    endTime?: string;
   };
 
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -25,29 +25,29 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
   const [showForm, setShowForm] = useState(false);
   const [titleInput, setTitleInput] = useState('');
   const [timeInput, setTimeInput] = useState('');
+  const [endTimeInput, setEndTimeInput] = useState('');
 
   useEffect(() => {
     console.log('Refresh trigger changed:', refreshTrigger);
     const fetchEvents = async () => {
-        try {
-            const idToken = await auth.currentUser?.getIdToken();
-            if (!idToken) return;
+      try {
+        const idToken = await auth.currentUser?.getIdToken();
+        if (!idToken) return;
 
-            const response = await fetch('http://localhost:5000/api/events', {
-                headers: { 'Authorization': `Bearer ${idToken}` },
-            });
+        const response = await fetch('http://localhost:5000/api/events', {
+          headers: { 'Authorization': `Bearer ${idToken}` },
+        });
 
-            if (!response.ok) throw new Error('Failed to fetch events');
-            const data = await response.json();
-            setEvents(data); // This updates the calendar UI
-        } catch (error) {
-            console.error('[Calendar] Error fetching events:', error);
-        }
+        if (!response.ok) throw new Error('Failed to fetch events');
+        const data = await response.json();
+        setEvents(data);
+      } catch (error) {
+        console.error('[Calendar] Error fetching events:', error);
+      }
     };
 
     fetchEvents();
-}, [refreshTrigger]);
-
+  }, [refreshTrigger]);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -106,7 +106,8 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
         month: currentDate.getMonth(),
         year: currentDate.getFullYear(),
         title: titleInput,
-        time: timeInput
+        time: timeInput,
+        endTime: endTimeInput
       };
       try {
         const idToken = await auth.currentUser?.getIdToken();
@@ -124,6 +125,7 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
 
         setTitleInput('');
         setTimeInput('');
+        setEndTimeInput('');
         setShowForm(false);
       } catch (error) {
         console.error('Error adding event:', error);
@@ -180,7 +182,6 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
         </div>
       </div>
 
-      {/* Monthly View */}
       {viewMode === 'month' && (
         <div className="calendar-grid">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
@@ -199,7 +200,7 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
                     .sort((a, b) => a.time.localeCompare(b.time))
                     .map(event => (
                       <div key={event.id} className="event-preview">
-                        <span>{event.title}</span>
+                        <span>{event.title} {event.time} - {event.endTime}</span>
                         <button
                           className="delete-button"
                           onClick={(e) => {
@@ -219,7 +220,6 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
         </div>
       )}
 
-      {/* Weekly View */}
       {viewMode === 'week' && (
         <div className="week-container">
           <div className="week-header">
@@ -256,7 +256,7 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
                           className="week-event"
                           style={{ top: `${topPosition}px` }}
                         >
-                          {event.title}
+                          {event.title} {event.time} - {event.endTime}
                         </div>
                       );
                     })}
@@ -268,12 +268,30 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
       )}
 
       {showForm && (
-        <div className="event-form">
-          <h3>Add Event for {selectedDay} {currentDate.toLocaleString('default', { month: 'long' })}</h3>
-          <input type="text" placeholder="Event title" value={titleInput} onChange={(e) => setTitleInput(e.target.value)} />
-          <input type="time" value={timeInput} onChange={(e) => setTimeInput(e.target.value)} />
-          <button onClick={addEvent}>Add Event</button>
-          <button onClick={() => setShowForm(false)}>Cancel</button>
+        <div className="popup-overlay" onClick={() => setShowForm(false)}>
+          <div className="popup-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Add Event for {selectedDay} {currentDate.toLocaleString('default', { month: 'long' })}</h3>
+            <input
+              type="text"
+              placeholder="Event title"
+              value={titleInput}
+              onChange={(e) => setTitleInput(e.target.value)}
+            />
+            <input
+              type="time"
+              value={timeInput}
+              onChange={(e) => setTimeInput(e.target.value)}
+              placeholder="Start Time"
+            />
+            <input
+              type="time"
+              value={endTimeInput}
+              onChange={(e) => setEndTimeInput(e.target.value)}
+              placeholder="End Time"
+            />
+            <button onClick={addEvent}>Add Event</button>
+            <button onClick={() => setShowForm(false)}>Cancel</button>
+          </div>
         </div>
       )}
     </div>
