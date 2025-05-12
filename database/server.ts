@@ -145,6 +145,8 @@ interface GroqSuggestion {
   description: string;
   hobby: string;
   date: string; // YYYY-MM-DD
+  start: string;
+  end: string;
 }
 
 app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<void> => {
@@ -221,11 +223,16 @@ app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<voi
           role: "user",
           content: `Suggest 3 different hobby activities for these dates: ${freeDates.join(', ')}.
           User's existing hobbies: ${hobbies.map(h => `${h.hobby} (${h.skill_level}, goal: ${h.goal})`).join(', ')}.
+          Make sure the hobby activity suggestions are unique and bite-sized (able to complete in 15-30 minutes).
           Format each suggestion EXACTLY like:
-          [date]|[Hobby Name]|[1-sentence description connecting to existing hobbies]
+          [date]|[start]|[end]|[Hobby Name]|[1-sentence description connecting to existing hobbies]
           
           Example:
-          2023-10-15|Urban Sketching|Quick 15-minute sketches of cityscapes to build observation skills from photography`
+          2023-10-15|3:00 PM|3:15 PM|Urban Sketching|Quick 15-minute sketches of cityscapes to build observation skills from photography
+          
+          Do NOT combine multiple hobbies into one suggestion.
+          Take the user's existing schedule for the day into account. For example, if their calendar events that day include many meetings or indoor events, suggest their hobby suggestion to be related to the outdoors.`
+          
         }]
       },
       { headers: { 'Authorization': `Bearer ${process.env.GROQ_API_KEY}` } }
@@ -237,8 +244,8 @@ app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<voi
       .filter(line => line.trim())
       .slice(0, 3)
       .map(line => {
-        const [date, hobby, description] = line.split('|');
-        return { date, hobby, description };
+        const [date, hobby, start, end, description] = line.split('|');
+        return { date, hobby, start, end, description };
       });
 
     res.status(200).json({ suggestions });
