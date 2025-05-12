@@ -18,6 +18,7 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
     title: string;
     time: string;
     endTime?: string;
+    description?: string;
   };
 
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -26,9 +27,10 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
   const [titleInput, setTitleInput] = useState('');
   const [timeInput, setTimeInput] = useState('');
   const [endTimeInput, setEndTimeInput] = useState('');
+  const [descriptionInput, setDescriptionInput] = useState('');
+  const [activeEvent, setActiveEvent] = useState<CalendarEvent | null>(null);
 
   useEffect(() => {
-    console.log('Refresh trigger changed:', refreshTrigger);
     const fetchEvents = async () => {
       try {
         const idToken = await auth.currentUser?.getIdToken();
@@ -75,21 +77,13 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
 
   const goToPrevious = () => {
     const newDate = new Date(currentDate);
-    if (viewMode === 'month') {
-      newDate.setMonth(currentDate.getMonth() - 1);
-    } else {
-      newDate.setDate(currentDate.getDate() - 7);
-    }
+    viewMode === 'month' ? newDate.setMonth(currentDate.getMonth() - 1) : newDate.setDate(currentDate.getDate() - 7);
     setCurrentDate(newDate);
   };
 
   const goToNext = () => {
     const newDate = new Date(currentDate);
-    if (viewMode === 'month') {
-      newDate.setMonth(currentDate.getMonth() + 1);
-    } else {
-      newDate.setDate(currentDate.getDate() + 7);
-    }
+    viewMode === 'month' ? newDate.setMonth(currentDate.getMonth() + 1) : newDate.setDate(currentDate.getDate() + 7);
     setCurrentDate(newDate);
   };
 
@@ -107,7 +101,8 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
         year: currentDate.getFullYear(),
         title: titleInput,
         time: timeInput,
-        endTime: endTimeInput
+        endTime: endTimeInput,
+        description: descriptionInput
       };
       try {
         const idToken = await auth.currentUser?.getIdToken();
@@ -122,10 +117,10 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
         if (!response.ok) throw new Error('Failed to save event');
         const savedEvent = await response.json();
         setEvents([...events, savedEvent]);
-
         setTitleInput('');
         setTimeInput('');
         setEndTimeInput('');
+        setDescriptionInput('');
         setShowForm(false);
       } catch (error) {
         console.error('Error adding event:', error);
@@ -174,7 +169,6 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
           </span>
           <button onClick={goToNext}>→</button>
         </div>
-        
         <div className="view-toggle">
           <button onClick={() => setViewMode(viewMode === 'month' ? 'week' : 'month')}>
             {viewMode === 'month' ? 'Week View' : 'Month View'}
@@ -199,18 +193,17 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
                   {getEventsForDay(dateObj.getDate(), dateObj.getMonth(), dateObj.getFullYear())
                     .sort((a, b) => a.time.localeCompare(b.time))
                     .map(event => (
-                      <div key={event.id} className="event-preview">
-                        <span>{event.title} {event.time} - {event.endTime}</span>
+                      <div
+                        key={event.id}
+                        className="event-preview"
+                        onClick={(e) => { e.stopPropagation(); setActiveEvent(event); }}
+                      >
+                        <span>{event.title}</span>
                         <button
                           className="delete-button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteEvent(event.id);
-                          }}
+                          onClick={(e) => { e.stopPropagation(); deleteEvent(event.id); }}
                           title="Delete event"
-                        >
-                          ×
-                        </button>
+                        >×</button>
                       </div>
                     ))}
                 </div>
@@ -230,7 +223,6 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
               </div>
             ))}
           </div>
-
           <div className="week-grid">
             <div className="time-column">
               {Array.from({ length: 24 }, (_, i) => (
@@ -239,7 +231,6 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
                 </div>
               ))}
             </div>
-
             {calendarDays.map((dateObj, index) => (
               <div
                 key={index}
@@ -255,8 +246,9 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
                           key={event.id}
                           className="week-event"
                           style={{ top: `${topPosition}px` }}
+                          onClick={(e) => { e.stopPropagation(); setActiveEvent(event); }}
                         >
-                          {event.title} {event.time} - {event.endTime}
+                          {event.title}
                         </div>
                       );
                     })}
@@ -271,26 +263,46 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
         <div className="popup-overlay" onClick={() => setShowForm(false)}>
           <div className="popup-content" onClick={(e) => e.stopPropagation()}>
             <h3>Add Event for {selectedDay} {currentDate.toLocaleString('default', { month: 'long' })}</h3>
+            <label>Event Title</label>
             <input
               type="text"
               placeholder="Event title"
               value={titleInput}
               onChange={(e) => setTitleInput(e.target.value)}
             />
+            <label>Start Time</label>
             <input
               type="time"
               value={timeInput}
               onChange={(e) => setTimeInput(e.target.value)}
-              placeholder="Start Time"
             />
+            <label>End Time</label>
             <input
               type="time"
               value={endTimeInput}
               onChange={(e) => setEndTimeInput(e.target.value)}
-              placeholder="End Time"
+            />
+            <label>Description</label>
+            <textarea
+              placeholder="Event description"
+              value={descriptionInput}
+              onChange={(e) => setDescriptionInput(e.target.value)}
+              style={{ width: '100%', padding: '8px', margin: '5px 0', border: '1px solid #ccc', borderRadius: '4px' }}
             />
             <button onClick={addEvent}>Add Event</button>
             <button onClick={() => setShowForm(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {activeEvent && (
+        <div className="popup-overlay" onClick={() => setActiveEvent(null)}>
+          <div className="popup-content" onClick={(e) => e.stopPropagation()}>
+            <h3>{activeEvent.title}</h3>
+            <p><strong>Start Time:</strong> {activeEvent.time}</p>
+            <p><strong>End Time:</strong> {activeEvent.endTime}</p>
+            <p><strong>Description:</strong> {activeEvent.description}</p>
+            <button onClick={() => setActiveEvent(null)}>Close</button>
           </div>
         </div>
       )}

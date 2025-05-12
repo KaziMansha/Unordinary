@@ -182,6 +182,7 @@
   z-index: 100;
 }
 
+/* Popup Modal Styles */
 .popup-overlay {
   position: fixed;
   top: 0;
@@ -209,12 +210,21 @@
   margin-bottom: 10px;
 }
 
-.popup-content input {
+.popup-content label {
+  display: block;
+  text-align: left;
+  font-weight: bold;
+  margin: 8px 0 4px 0;
+}
+
+.popup-content input,
+.popup-content textarea {
   width: 100%;
   padding: 8px;
-  margin: 5px 0;
+  margin-bottom: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
+  box-sizing: border-box;
 }
 
 .popup-content button {
