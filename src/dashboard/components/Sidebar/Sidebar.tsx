@@ -98,6 +98,18 @@ const Sidebar: React.FC<{ onEventAdded: () => void }> = ({ onEventAdded }) => {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      await axios.post(
+        'http://localhost:5000/api/hobbies',
+        {
+          hobby_name: suggestion.hobby,
+          // you can map description → goal or set a default skill level
+          skill_level: 'beginner',
+          goal: suggestion.description
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
       console.log('Event added, calling refresh');
       onEventAdded();
       setSuggestions(prev => prev.filter(s => s.date !== suggestion.date));
