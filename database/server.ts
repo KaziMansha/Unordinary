@@ -115,13 +115,21 @@ app.post('/api/hobbies', async (req: Request, res: Response): Promise<void> => {
       res.status(400).json({ error: 'Missing hobby name' });
       return;
     }
+
     const insertQuery = `
       INSERT INTO hobbies (user_id, hobby, skill_level, goal)
       VALUES ($1, $2, $3, $4)
+      ON CONFLICT (user_id, hobby) DO NOTHING
       RETURNING *;
     `;
+
     const values = [userId, hobby_name, skill_level, goal];
     const hobbyResult = await pool.query(insertQuery, values);
+
+     if (hobbyResult.rowCount === 0) {
+      res.status(200).json({ message: 'Hobby already exists' });
+    }
+
     res.status(200).json(hobbyResult.rows[0]);
   } catch (error) {
     console.error('Error creating hobby:', error);
@@ -155,84 +163,100 @@ app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<voi
   }
 
   try {
-    // Verify user
+    // 1. Verify user
     const idToken = authHeader.split('Bearer ')[1];
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const firebaseUid = decodedToken.uid;
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    const firebaseUid = decoded.uid;
 
-    // Get user ID
-    const userResult = await pool.query(
-      'SELECT id FROM users WHERE firebase_uid = $1', 
+    // 2. Look up internal user ID
+    const userQ = await pool.query(
+      'SELECT id FROM users WHERE firebase_uid = $1',
       [firebaseUid]
     );
-    if (userResult.rowCount === 0) {
+    if (userQ.rowCount === 0) {
       res.status(404).json({ error: 'User not found' });
       return;
     }
-    const userId = userResult.rows[0].id;
+    const userId = userQ.rows[0].id;
 
-    // Step 1: Find 3 free days in the next 2 weeks
-    const eventsResult = await pool.query(
-      `SELECT day, month, year FROM events 
-       WHERE user_id = $1 
-       AND (year, month, day) BETWEEN 
-         (EXTRACT(YEAR FROM NOW()), EXTRACT(MONTH FROM NOW()), EXTRACT(DAY FROM NOW())) 
-         AND 
-         (EXTRACT(YEAR FROM NOW() + INTERVAL '14 days'), EXTRACT(MONTH FROM NOW() + INTERVAL '14 days'), EXTRACT(DAY FROM NOW() + INTERVAL '14 days'))`,
+    // 3. Fetch all events in the next 2 weeks
+    const eventsQ = await pool.query(
+      `SELECT day, month, year, title, time
+       FROM events
+       WHERE user_id = $1
+         AND (year, month, day) BETWEEN
+           (EXTRACT(YEAR FROM NOW()), EXTRACT(MONTH FROM NOW()), EXTRACT(DAY FROM NOW()))
+           AND
+           (EXTRACT(YEAR FROM NOW() + INTERVAL '14 days'),
+            EXTRACT(MONTH FROM NOW() + INTERVAL '14 days'),
+            EXTRACT(DAY FROM NOW() + INTERVAL '14 days'))`,
       [userId]
     );
 
-    // Find dates without events
-    const busyDates = new Set(
-      eventsResult.rows.map(e => 
-        `${e.year}-${String(e.month + 1).padStart(2, '0')}-${String(e.day).padStart(2, '0')}`
-      )
-    );
+    // 4. Organize events by date string
+    const eventsByDate: Record<string, string[]> = {};
+    eventsQ.rows.forEach(e => {
+      const date = `${e.year}-${String(e.month + 1).padStart(2, '0')}-${String(e.day).padStart(2, '0')}`;
+      const desc = `${e.time} – ${e.title}`;
+      if (!eventsByDate[date]) eventsByDate[date] = [];
+      eventsByDate[date].push(desc);
+    });
 
-    const freeDates: string[] = [];
+    // 5. Build a human-readable calendar block
     const today = new Date();
-    for (let i = 0; freeDates.length < 3 && i < 14; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      const dateString = date.toISOString().split('T')[0];
-      if (!busyDates.has(dateString)) {
-        freeDates.push(dateString);
-      }
+    const calendarLines: string[] = [];
+    for (let i = 0; i <= 14; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const ds = d.toISOString().split('T')[0];
+      const evs = eventsByDate[ds];
+      calendarLines.push(
+        evs
+          ? `${ds}: ${evs.join(', ')}`
+          : `${ds}: (no events)`
+      );
     }
 
-    if (freeDates.length < 3) {
-      res.status(400).json({ error: 'Not enough free days found' });
-      return;
-    }
-
-    // Step 2: Get user hobbies for AI context
-    const hobbiesResult = await pool.query(
+    // 6. Fetch existing hobbies for context
+    const hobbiesQ = await pool.query(
       'SELECT hobby, skill_level, goal FROM hobbies WHERE user_id = $1',
       [userId]
     );
-    const hobbies = hobbiesResult.rows;
+    const existing = hobbiesQ.rows
+      .map(h => `${h.hobby} (${h.skill_level}, goal: ${h.goal})`)
+      .join('; ');
 
-    // Step 3: Generate AI suggestions
+    // 7. Prompt the AI with the full calendar
     const aiResponse = await axios.post<GroqResponse>(
       'https://api.groq.com/openai/v1/chat/completions',
       {
         model: process.env.GROQ_MODEL,
         messages: [{
-          role: "user",
-          content: `Suggest 3 different hobby activities for these dates: ${freeDates.join(', ')}.
-          User's existing hobbies: ${hobbies.map(h => `${h.hobby} (${h.skill_level}, goal: ${h.goal})`).join(', ')}.
-          Format each suggestion EXACTLY like:
-          [date]|[Hobby Name]|[1-sentence description connecting to existing hobbies]
-          
-          Example:
-          2023-10-15|Urban Sketching|Quick 15-minute sketches of cityscapes to build observation skills from photography`
+          role: 'user',
+          content: `
+          Here is your calendar for the next two weeks:
+          ${calendarLines.join('\n')}
+
+          Here are your existing hobbies (name, level, goal):
+          ${existing || 'None'}
+
+          From the free slots in your calendar, pick three days, choose a time, and recommend **hobby activities based off of your activities** (i.e., ones already in your existing list).
+
+          Take the user's existing schedule for the day into account. For example, if their calendar events that day include many meetings or indoor events, suggest their hobby suggestion to be related to the outdoors.
+
+          Make sure the hobby activity description are unique and bite-sized (able to complete in 15-30 minutes).
+          Take your existing schedule for the day into account. For example, if your calendar events that day include many meetings or indoor events, have hobby suggestion to be related to the outdoors.
+
+          **Reply EXACTLY** (no extra text) in this format:
+          YYYY-MM-DD|Hobby Name|1-sentence description
+          `
         }]
       },
-      { headers: { 'Authorization': `Bearer ${process.env.GROQ_API_KEY}` } }
+      { headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}` } }
     );
 
-    // Parse AI response
-    const suggestions = aiResponse.data.choices[0].message.content
+    // 8. Parse the AI’s lines into suggestions
+    const suggestions: GroqSuggestion[] = aiResponse.data.choices[0].message.content
       .split('\n')
       .filter(line => line.trim())
       .slice(0, 3)
@@ -242,8 +266,9 @@ app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<voi
       });
 
     res.status(200).json({ suggestions });
+
   } catch (error) {
-    console.error('Error generating suggestions:', error);
+    console.error('Error generating AI-driven suggestions:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
