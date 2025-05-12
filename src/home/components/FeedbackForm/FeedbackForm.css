@@ -2,156 +2,202 @@
    Global wrapper and heading
 --------------------------------------------------*/
 .fb-wrapper {
-    max-width: 520px;
-    margin: 3rem auto;
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  }
+  max-width: 520px;
+  margin: 3rem auto;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
   
-  .fb-title {
-    text-align: center;
-    margin-bottom: 1.5rem;
-    color: #1f0044;
-  }
+.fb-title {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: #1f0044;
+}
   
-  /* -------------------------------------------------
-     Card container
-  --------------------------------------------------*/
+/* -------------------------------------------------
+   Card container
+--------------------------------------------------*/
+.fb-card {
+  background: #fdfdfd;
+  border: 1px solid #e4e4e4;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+  
+/* -------------------------------------------------
+   Base label + common inputs
+--------------------------------------------------*/
+.fb-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-weight: 500;
+}
+  
+.fb-label select,
+.fb-label input[type="text"],
+.fb-label input[type="email"],
+.fb-label textarea {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+}
+  
+.fb-label input[type="range"] {
+  margin-top: 0.5rem;
+}
+  
+/* -------------------------------------------------
+   Each rating row
+--------------------------------------------------*/
+.fb-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+}
+  
+.fb-row select,
+.fb-row input[type="range"] {
+  flex: 1;
+}
+
+/* Slider label arranged vertically */
+.fb-slider {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+}
+  
+/* -------------------------------------------------
+   Add & remove row buttons
+--------------------------------------------------*/
+.fb-add {
+  background: #f0f0f0;
+  border: 1px solid #bbb;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  transition: background 0.25s;
+}
+  
+.fb-add:hover {
+  background: #e0e0e0;
+}
+  
+.fb-remove {
+  background: #ff5858;
+  border: none;
+  color: #fff;
+  font-size: 1.2rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  line-height: 28px;
+  text-align: center;
+}
+  
+/* -------------------------------------------------
+   Submit button & error text
+--------------------------------------------------*/
+.fb-submit {
+  margin-top: 0.5rem;
+  padding: 0.8rem;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  background: #7c5dfa;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.25s ease;
+}
+  
+.fb-submit:hover {
+  background: #6038d3;
+}
+  
+.fb-error {
+  color: crimson;
+  font-size: 0.8rem;
+}
+  
+.fb-thanks {
+  text-align: center;
+  margin: 4rem;
+  font-size: 1.4rem;
+  color: #28a745;
+}
+  
+
+@media (max-width: 768px) {
   .fb-card {
-    background: #fdfdfd;
-    border: 1px solid #e4e4e4;
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
-    padding: 2rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.2rem;
+    padding: 1.5rem;
   }
   
-  /* -------------------------------------------------
-     Base label + common inputs
-  --------------------------------------------------*/
-  .fb-label {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-    font-weight: 500;
-  }
-  
-  .fb-label select,
-  .fb-label input[type="text"],
-  .fb-label input[type="email"],
-  .fb-label textarea {
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    background: #fff;
-  }
-  
-  .fb-label input[type="range"] {
-    margin-top: 0.5rem;
-  }
-  
-  /* -------------------------------------------------
-     Each rating row
-  --------------------------------------------------*/
   .fb-row {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1.2rem;
-  }
-  
-  .fb-row select,
-  .fb-row input[type="range"] {
-    flex: 1;
-  }
-  
-  /* Slider label arranged vertically */
-  .fb-slider {
-    flex: 2;
-    display: flex;
     flex-direction: column;
-  }
-  
-  /* -------------------------------------------------
-     Add & remove row buttons
-  --------------------------------------------------*/
-  .fb-add {
-    background: #f0f0f0;
-    border: 1px solid #bbb;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    cursor: pointer;
-    margin-bottom: 1rem;
-    transition: background 0.25s;
-  }
-  
-  .fb-add:hover {
-    background: #e0e0e0;
+    align-items: stretch;
   }
   
   .fb-remove {
-    background: #ff5858;
-    border: none;
-    color: #fff;
-    font-size: 1.2rem;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    cursor: pointer;
-    line-height: 28px;
-    text-align: center;
+    align-self: flex-end;
   }
-  
-  /* -------------------------------------------------
-     Submit button & error text
-  --------------------------------------------------*/
-  .fb-submit {
-    margin-top: 0.5rem;
-    padding: 0.8rem;
-    border: none;
-    border-radius: 8px;
-    color: #fff;
-    background: #7c5dfa;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background 0.25s ease;
-  }
-  
-  .fb-submit:hover {
-    background: #6038d3;
-  }
-  
-  .fb-error {
-    color: crimson;
-    font-size: 0.8rem;
-  }
-  
-  /* -------------------------------------------------
-     Thank‑you screen
-  --------------------------------------------------*/
-  .fb-thanks {
-    text-align: center;
-    margin: 4rem;
-    font-size: 1.4rem;
-    color: #28a745;
-  }
-  
-  /* -------------------------------------------------
-     Responsive tweaks
-  --------------------------------------------------*/
-  @media (max-width: 768px) {
-    .fb-card {
-      padding: 1.5rem;
-    }
-  
-    .fb-row {
-      flex-direction: column;
-      align-items: stretch;
-    }
-  
-    .fb-remove {
-      align-self: flex-end;
-    }
-  }
-  
+}
+
+/* -------------------------------------------------
+   Range slider full-width & custom styling
+--------------------------------------------------*/
+/* Reset appearance and force full width */
+.fb-label input[type="range"],
+.fb-row input[type="range"] {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+     -moz-appearance: none;
+          appearance: none;
+}
+
+/* WebKit track */
+.fb-label input[type="range"]::-webkit-slider-runnable-track,
+.fb-row input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  background: #ddd;
+  border-radius: 3px;
+}
+
+/* WebKit thumb */
+.fb-label input[type="range"]::-webkit-slider-thumb,
+.fb-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: #7c5dfa;
+  margin-top: -5px;
+}
+
+/* Firefox track */
+.fb-label input[type="range"]::-moz-range-track,
+.fb-row input[type="range"]::-moz-range-track {
+  height: 6px;
+  background: #ddd;
+  border-radius: 3px;
+}
+
+/* Firefox thumb */
+.fb-label input[type="range"]::-moz-range-thumb,
+.fb-row input[type="range"]::-moz-range-thumb {
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: #7c5dfa;
+  border: none;
+}
