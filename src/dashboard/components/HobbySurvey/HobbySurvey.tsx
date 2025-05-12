@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./HobbySurvey.css";
+import { auth } from '../../../firebase-config';
+
 
 interface Hobby {
   hobby: string;
@@ -14,36 +16,34 @@ const HobbySurvey: React.FC = () => {
   const [hobbies, setHobbies] = useState<Hobby[]>([{ hobby: "", skillLevel: "", goal: "" }]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); // Prevent form from refreshing the page
+    e.preventDefault();
     
-    // Basic validation: Check if all hobbies have valid values
-    if (hobbies.some(hobby => !hobby.hobby || !hobby.skillLevel || !hobby.goal)) {
-      alert("Please fill out all fields before submitting.");
-      return;
-    }
-  
-    // You can send data to your backend (Example: using fetch)
     try {
-      // Replace with your actual API endpoint and logic
-      const response = await fetch("http://localhost:5000/api/hobbies", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(hobbies),
-      });
+      const user = auth.currentUser;
+      if (!user) throw new Error("User not authenticated");
+      
+      // Get Firebase ID token
+      const idToken = await user.getIdToken();
   
-      if (!response.ok) {
-        throw new Error("Failed to submit hobbies.");
+      // Send each hobby individually with authorization
+      for (const hobby of hobbies) {
+        const response = await fetch("http://localhost:5000/api/hobbies", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${idToken}`
+          },
+          body: JSON.stringify({
+            hobby_name: hobby.hobby,
+            skill_level: hobby.skillLevel,
+            goal: hobby.goal
+          }),
+        });
+  
+        if (!response.ok) throw new Error("Failed to submit hobbies");
       }
   
-      const data = await response.json();
-      console.log("Hobbies submitted successfully:", data);
-  
-      // After a successful submission, set the form state to submitted
       setSubmitted(true);
-  
-      // Redirect to another page after successful form submission (Example: Dashboard)
       navigate("/Dashboard");
     } catch (error) {
       console.error("Error submitting hobbies:", error);
