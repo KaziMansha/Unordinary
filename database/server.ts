@@ -77,44 +77,33 @@ app.post('/api/users', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-/*
------------------------------------------------------------This is the new endpoint that handles with storing the user data for their hobbies. -----------------------------------------------------------
-*/
-
-// Endpoint to create a new hobby for the authenticated user
-app.post('/api/hobbies', async (req: Request, res: Response): Promise<void> => {
-  // Expect the Firebase ID token in the Authorization header: "Bearer <token>"
+/* ──────────────────────────────────────────────
+   POST  /api/hobbies  → store a new hobby
+────────────────────────────────────────────── */
+app.post('/api/hobbies', async (req: Request, res: Response) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    res.status(401).json({ error: 'Unauthorized: No token provided' });
-    return;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized: No token provided' });
   }
   const idToken = authHeader.split('Bearer ')[1];
 
   try {
-    // Verify the token using Firebase Admin SDK
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     const firebaseUid = decodedToken.uid;
-    if (!firebaseUid) {
-      res.status(400).json({ error: 'Invalid token data' });
-      return;
-    }
+    if (!firebaseUid) return res.status(400).json({ error: 'Invalid token' });
 
-    // Retrieve the user record to get the internal user id
-    const userResult = await pool.query(
+    /* map firebaseUid → users.id */
+    const userRes = await pool.query(
       'SELECT id FROM users WHERE firebase_uid = $1',
       [firebaseUid]
     );
-    if (userResult.rowCount === 0) {
-      res.status(404).json({ error: 'User not found' });
-      return;
-    }
-    const userId = userResult.rows[0].id;
+    if (userRes.rowCount === 0)
+      return res.status(404).json({ error: 'User not found' });
+    const userId = userRes.rows[0].id;
+
     const { hobby_name, skill_level, goal } = req.body;
-    if (!hobby_name) {
-      res.status(400).json({ error: 'Missing hobby name' });
-      return;
-    }
+    if (!hobby_name) return res.status(400).json({ error: 'Missing hobby name' });
+
     const insertQuery = `
       INSERT INTO hobbies (user_id, hobby, skill_level, goal)
       VALUES ($1, $2, $3, $4)
@@ -122,12 +111,50 @@ app.post('/api/hobbies', async (req: Request, res: Response): Promise<void> => {
     `;
     const values = [userId, hobby_name, skill_level, goal];
     const hobbyResult = await pool.query(insertQuery, values);
-    res.status(200).json(hobbyResult.rows[0]);
-  } catch (error) {
-    console.error('Error creating hobby:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(200).json(hobbyResult.rows[0]);
+  } catch (err) {
+    console.error('Error creating hobby:', err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+/* ──────────────────────────────────────────────
+   GET  /api/hobbies  → return all hobbies for user
+────────────────────────────────────────────── */
+app.get('/api/hobbies', async (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized: No token provided' });
+  }
+  const idToken = authHeader.split('Bearer ')[1];
+
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const firebaseUid = decodedToken.uid;
+    if (!firebaseUid) return res.status(400).json({ error: 'Invalid token' });
+
+    /* map firebaseUid → users.id */
+    const userRes = await pool.query(
+      'SELECT id FROM users WHERE firebase_uid = $1',
+      [firebaseUid]
+    );
+    if (userRes.rowCount === 0)
+      return res.status(404).json({ error: 'User not found' });
+    const userId = userRes.rows[0].id;
+
+    /* fetch hobbies */
+    const hobbyRes = await pool.query(
+      'SELECT id, hobby, skill_level, goal FROM hobbies WHERE user_id = $1',
+      [userId]
+    );
+
+    return res.json(hobbyRes.rows);              // [] if none
+  } catch (err) {
+    console.error('Error fetching hobbies:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
 /*
 -----------------------------------------------------------Handles AI!!! AND generates hobby.-----------------------------------------------------------
