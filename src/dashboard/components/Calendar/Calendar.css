@@ -241,3 +241,22 @@
 .popup-content button:hover {
   background-color: #155ab6;
 }
+
+.event-time {
+  font-size: 0.75rem;
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+.week-event strong {
+  font-size: 0.8rem;
+}
+
+.event-preview {
+  transition: all 0.3s ease;
+}
+
+/* Ensure week events update properly */
+.week-event {
+  transition: top 0.3s ease, height 0.3s ease;
+}

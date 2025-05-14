@@ -38,6 +38,18 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
+// Time conversion utilities
+const convertToMinutes = (time: string): number => {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+
+const minutesToTime = (totalMinutes: number): string => {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+};
+
 // API endpoint to upsert user data
 app.post('/api/users', async (req: Request, res: Response): Promise<void> => {
   // Expect the Firebase ID token in the Authorization header: "Bearer <token>"
@@ -150,9 +162,11 @@ interface GroqResponse {
 }
 
 interface GroqSuggestion {
-  description: string;
+  date: string;
+  startTime: string;
+  endTime: string;
   hobby: string;
-  date: string; // YYYY-MM-DD
+  description: string;
 }
 
 app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<void> => {
@@ -179,45 +193,113 @@ app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<voi
     }
     const userId = userQ.rows[0].id;
 
-    // 3. Fetch all events in the next 2 weeks
-    const eventsQ = await pool.query(
-      `SELECT day, month, year, title, time
-       FROM events
-       WHERE user_id = $1
-         AND (year, month, day) BETWEEN
-           (EXTRACT(YEAR FROM NOW()), EXTRACT(MONTH FROM NOW()), EXTRACT(DAY FROM NOW()))
-           AND
-           (EXTRACT(YEAR FROM NOW() + INTERVAL '14 days'),
-            EXTRACT(MONTH FROM NOW() + INTERVAL '14 days'),
-            EXTRACT(DAY FROM NOW() + INTERVAL '14 days'))`,
-      [userId]
-    );
+    // 3. Fetch events in the next 2 weeks
+    const eventsQ = await pool.query(`
+      SELECT 
+        id, 
+        day, 
+        month, 
+        year, 
+        time, 
+        end_time as "endTime",
+        title
+      FROM events 
+      WHERE user_id = $1 
+        AND MAKE_DATE(year, month + 1, day) 
+          BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '14 days'
+      ORDER BY year, month, day, time
+    `, [userId]);
 
-    // 4. Organize events by date string
-    const eventsByDate: Record<string, string[]> = {};
-    eventsQ.rows.forEach(e => {
-      const date = `${e.year}-${String(e.month + 1).padStart(2, '0')}-${String(e.day).padStart(2, '0')}`;
-      const desc = `${e.time} – ${e.title}`;
-      if (!eventsByDate[date]) eventsByDate[date] = [];
-      eventsByDate[date].push(desc);
-    });
-
-    // 5. Build a human-readable calendar block
+    // 4. Find free time slots
+    const freeSlots: { date: string; start: string; end: string }[] = [];
     const today = new Date();
-    const calendarLines: string[] = [];
-    for (let i = 0; i <= 14; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
-      const ds = d.toISOString().split('T')[0];
-      const evs = eventsByDate[ds];
-      calendarLines.push(
-        evs
-          ? `${ds}: ${evs.join(', ')}`
-          : `${ds}: (no events)`
-      );
+    const twoWeeksLater = new Date(today);
+    twoWeeksLater.setDate(today.getDate() + 14);
+    const eventsByDate: { [key: string]: any[] } = {};
+
+    const dateArray: Date[] = [];
+    for (let d = new Date(today); d <= twoWeeksLater; d.setDate(d.getDate() + 1)) {
+      dateArray.push(new Date(d));
     }
 
-    // 6. Fetch existing hobbies for context
+    dateArray.forEach(currentDate => {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth(); // 0-based
+      const day = currentDate.getDate();
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      
+      // Get events for this date
+      const daysEvents = eventsQ.rows.filter(event => 
+        event.year === year && 
+        event.month === month && 
+        event.day === day
+      ).sort((a, b) => convertToMinutes(a.time) - convertToMinutes(b.time));
+
+      // If no events, add full day slot
+      if (daysEvents.length === 0) {
+        freeSlots.push({
+          date: dateStr,
+          start: '08:00',
+          end: '17:00'
+        });
+        return;
+      }
+
+      // Existing slot detection logic...
+      // [Keep the existing code for checking before first event, between events, and after last event]
+    });
+
+    // Group events by date
+    eventsQ.rows.forEach(event => {
+      const date = `${event.year}-${String(event.month + 1).padStart(2, '0')}-${String(event.day).padStart(2, '0')}`;
+      if (!eventsByDate[date]) eventsByDate[date] = [];
+      eventsByDate[date].push({
+        ...event,
+        endTime: event.endTime || event.time // Handle events without end time
+      });
+    });
+
+    // Find slots for each day
+    Object.entries(eventsByDate).forEach(([date, events]) => {
+      const sortedEvents = events.sort((a, b) => convertToMinutes(a.time) - convertToMinutes(b.time));
+      
+      // Check before first event (8:00 AM to first event)
+      const firstEventStart = convertToMinutes(sortedEvents[0].time);
+      if (firstEventStart > 480) { // 8:00 AM = 480 minutes
+        freeSlots.push({
+          date,
+          start: '08:00',
+          end: minutesToTime(firstEventStart)
+        });
+      }
+
+      // Check between events
+      for (let i = 0; i < sortedEvents.length - 1; i++) {
+        const currentEnd = convertToMinutes(sortedEvents[i].endTime);
+        const nextStart = convertToMinutes(sortedEvents[i + 1].time);
+        
+        if (nextStart - currentEnd >= 15) { // Minimum 15 minute gap
+          freeSlots.push({
+            date,
+            start: minutesToTime(currentEnd),
+            end: minutesToTime(nextStart)
+          });
+        }
+      }
+
+      // Check after last event (last event end to 17:00)
+      const lastEvent = sortedEvents[sortedEvents.length - 1];
+      const lastEventEnd = convertToMinutes(lastEvent.endTime);
+      if (lastEventEnd < 1020) { // 17:00 = 1020 minutes
+        freeSlots.push({
+          date,
+          start: minutesToTime(lastEventEnd),
+          end: '17:00'
+        });
+      }
+    });
+
+    // 5. Fetch existing hobbies for context
     const hobbiesQ = await pool.query(
       'SELECT hobby, skill_level, goal FROM hobbies WHERE user_id = $1',
       [userId]
@@ -226,44 +308,64 @@ app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<voi
       .map(h => `${h.hobby} (${h.skill_level}, goal: ${h.goal})`)
       .join('; ');
 
-    // 7. Prompt the AI with the full calendar
+    // 6. Generate AI suggestions with actual time slots
     const aiResponse = await axios.post<GroqResponse>(
       'https://api.groq.com/openai/v1/chat/completions',
       {
         model: process.env.GROQ_MODEL,
+        temperature: 0.7,
         messages: [{
           role: 'user',
           content: `
-          Here is your calendar for the next two weeks:
-          ${calendarLines.join('\n')}
+          AVAILABLE TIME SLOTS (must use exactly these between ${today.toISOString().split('T')[0]} and ${twoWeeksLater.toISOString().split('T')[0]}):
+          ${freeSlots.map(slot => `${slot.date} ${slot.start}-${slot.end}`).join('\n')}
 
-          Here are your existing hobbies (name, level, goal):
+          EXISTING HOBBIES:
           ${existing || 'None'}
 
-          From the free slots in your calendar, pick three days, choose a time, and recommend **hobby activities based off of your activities** (i.e., ones already in your existing list).
+          STRICT REQUIREMENTS:
+          1. Choose 3 different time slots from the AVAILABLE list
+          2. Activities must fit EXACTLY within the time windows
+          3. Format MUST BE:
+          YYYY-MM-DD|HH:MM|HH:MM|Hobby Name|1-sentence description
+          4. Times must be in 24h format (e.g., 14:30 not 2:30 PM)
 
-          Take the user's existing schedule for the day into account. For example, if their calendar events that day include many meetings or indoor events, suggest their hobby suggestion to be related to the outdoors.
-
-          Make sure the hobby activity description are unique and bite-sized (able to complete in 15-30 minutes).
-          Take your existing schedule for the day into account. For example, if your calendar events that day include many meetings or indoor events, have hobby suggestion to be related to the outdoors.
-
-          **Reply EXACTLY** (no extra text) in this format:
-          YYYY-MM-DD|Hobby Name|1-sentence description
+          EXAMPLE:
+          2024-03-15|14:00|14:15|Meditation|Practice mindful breathing for 15 minutes
           `
         }]
       },
       { headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}` } }
     );
 
-    // 8. Parse the AI’s lines into suggestions
+    // 7. Parse AI response
     const suggestions: GroqSuggestion[] = aiResponse.data.choices[0].message.content
-      .split('\n')
-      .filter(line => line.trim())
-      .slice(0, 3)
-      .map(line => {
-        const [date, hobby, description] = line.split('|');
-        return { date, hobby, description };
-      });
+    .split('\n')
+    .filter(line => {
+      const parts = line.split('|');
+      return parts.length === 5 && 
+            parts.every(p => p.trim().length > 0) &&
+            /^\d{4}-\d{2}-\d{2}$/.test(parts[0].trim()) &&
+            /^\d{2}:\d{2}$/.test(parts[1].trim()) &&
+            /^\d{2}:\d{2}$/.test(parts[2].trim());
+    })
+    .slice(0, 3)
+    .map(line => {
+      const [date, startTime, endTime, hobby, description] = line.split('|').map(p => p.trim());
+      return { 
+        date,
+        startTime,
+        endTime,
+        hobby,
+        description
+      };
+    });
+
+    if (suggestions.length === 0) {
+      console.error('AI returned invalid suggestions:', aiResponse.data.choices[0].message.content);
+      res.status(200).json({ suggestions: [] });
+      return;
+    }
 
     res.status(200).json({ suggestions });
 
@@ -303,9 +405,10 @@ app.get('/api/events', async (req: Request, res: Response) => {
     const userId = userResult.rows[0].id;
 
     const eventsResult = await pool.query(
-      'SELECT * FROM events WHERE user_id = $1',
-      [userId]
+    'SELECT id, day, month, year, title, time, end_time as "endTime", description FROM events WHERE user_id = $1',
+    [userId]
     );
+
     res.status(200).json(eventsResult.rows);
 
     console.log(`[Server] Found ${eventsResult.rowCount} events for user ${userId}`);
@@ -341,18 +444,19 @@ app.post('/api/events', async (req: Request, res: Response) => {
     }
     const userId = userResult.rows[0].id;
 
-    const { day, month, year, title, time } = req.body;
+    const { day, month, year, title, time, endTime, description } = req.body;
     if (!day || !month || !year || !title || !time) {
       res.status(400).json({ error: 'Missing required fields' });
       return;
     }
 
     const insertQuery = `
-      INSERT INTO events (user_id, day, month, year, title, time)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *;
+    INSERT INTO events (user_id, day, month, year, title, time, end_time, description)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING *;
     `;
-    const values = [userId, day, month, year, title, time];
+
+    const values = [userId, day, month, year, title, time, endTime || null, description || null];
     const result = await pool.query(insertQuery, values);
     res.status(201).json(result.rows[0]);
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { auth } from '../../../firebase-config.ts';
 import './Calendar.css';
+import { formatTime } from '../../../utils/timeUtils.ts';
 
 interface CalendarProps {
   refreshTrigger?: number;
@@ -94,39 +95,50 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
   };
 
   const addEvent = async () => {
-    if (selectedDay && titleInput) {
-      const newEvent = {
-        day: selectedDay,
-        month: currentDate.getMonth(),
-        year: currentDate.getFullYear(),
-        title: titleInput,
-        time: timeInput,
-        endTime: endTimeInput,
-        description: descriptionInput
-      };
-      try {
-        const idToken = await auth.currentUser?.getIdToken();
-        if (!idToken) return;
+  if (selectedDay && titleInput) {
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      if (!idToken) return;
 
-        const response = await fetch('http://localhost:5000/api/events', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
-          body: JSON.stringify(newEvent),
-        });
+      const response = await fetch('http://localhost:5000/api/events', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': `Bearer ${idToken}` 
+        },
+        body: JSON.stringify({
+          day: selectedDay,
+          month: currentDate.getMonth(),
+          year: currentDate.getFullYear(),
+          title: titleInput,
+          time: timeInput,
+          endTime: endTimeInput,
+          description: descriptionInput
+        }),
+      });
 
-        if (!response.ok) throw new Error('Failed to save event');
-        const savedEvent = await response.json();
-        setEvents([...events, savedEvent]);
-        setTitleInput('');
-        setTimeInput('');
-        setEndTimeInput('');
-        setDescriptionInput('');
-        setShowForm(false);
-      } catch (error) {
-        console.error('Error adding event:', error);
-      }
+      if (!response.ok) throw new Error('Failed to save event');
+      
+      const savedEvent = await response.json();
+      
+      // Update state with complete event data from server
+      setEvents(prev => [...prev, {
+        ...savedEvent,
+        endTime: savedEvent.end_time, // Map to correct field name
+      }]);
+
+      // Reset form
+      setTitleInput('');
+      setTimeInput('');
+      setEndTimeInput('');
+      setDescriptionInput('');
+      setShowForm(false);
+
+    } catch (error) {
+      console.error('Error adding event:', error);
     }
-  };
+  }
+};
 
   const deleteEvent = async (eventId: number) => {
     try {
@@ -155,6 +167,12 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
     const [hours, minutes] = time.split(':').map(Number);
     const hourHeight = 40;
     return (hours * hourHeight) + (minutes / 60) * hourHeight;
+  };
+
+  const calculateHeight = (start: string, end: string) => {
+    const [startH, startM] = start.split(':').map(Number);
+    const [endH, endM] = end.split(':').map(Number);
+    return ((endH - startH) * 40) + ((endM - startM) * (40/60));
   };
 
   return (
@@ -193,17 +211,15 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
                   {getEventsForDay(dateObj.getDate(), dateObj.getMonth(), dateObj.getFullYear())
                     .sort((a, b) => a.time.localeCompare(b.time))
                     .map(event => (
-                      <div
-                        key={event.id}
+                      <div 
+                        key={event.id} // Add this
                         className="event-preview"
                         onClick={(e) => { e.stopPropagation(); setActiveEvent(event); }}
                       >
-                        <span>{event.title}</span>
-                        <button
-                          className="delete-button"
-                          onClick={(e) => { e.stopPropagation(); deleteEvent(event.id); }}
-                          title="Delete event"
-                        >×</button>
+                        <span>
+                          {formatTime(event.time)} - {event.endTime && formatTime(event.endTime)}: {event.title}
+                        </span>
+                        <button className="delete-button">×</button>
                       </div>
                     ))}
                 </div>
@@ -242,14 +258,13 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
                     .map(event => {
                       const topPosition = calculateTop(event.time);
                       return (
-                        <div
-                          key={event.id}
-                          className="week-event"
-                          style={{ top: `${topPosition}px` }}
-                          onClick={(e) => { e.stopPropagation(); setActiveEvent(event); }}
-                        >
-                          {event.title}
+                        <div className="week-event" style={{ top: `${topPosition}px`, height: `${calculateHeight(event.time, event.endTime)}px` }}>
+                          <div className="event-content">
+                            <strong>{formatTime(event.time)}-{event.endTime && formatTime(event.endTime)}</strong>
+                            <p>{event.title}</p>
+                          </div>
                         </div>
+
                       );
                     })}
                 </div>
@@ -299,9 +314,13 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
         <div className="popup-overlay" onClick={() => setActiveEvent(null)}>
           <div className="popup-content" onClick={(e) => e.stopPropagation()}>
             <h3>{activeEvent.title}</h3>
-            <p><strong>Start Time:</strong> {activeEvent.time}</p>
-            <p><strong>End Time:</strong> {activeEvent.endTime}</p>
-            <p><strong>Description:</strong> {activeEvent.description}</p>
+            <p><strong>Time:</strong> {formatTime(activeEvent.time)} - {activeEvent.endTime && formatTime(activeEvent.endTime)}</p>
+            {activeEvent.description && (
+              <div className="event-description">
+                <strong>Description:</strong>
+                <p>{activeEvent.description}</p>
+              </div>
+            )}
             <button onClick={() => setActiveEvent(null)}>Close</button>
           </div>
         </div>

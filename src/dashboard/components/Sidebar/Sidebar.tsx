@@ -3,6 +3,7 @@ import { onAuthStateChanged, getAuth } from 'firebase/auth';
 import { auth } from '../../../firebase-config';
 import './Sidebar.css';
 import axios from 'axios';
+import { formatTime } from '../../../utils/timeUtils.ts';
 
 interface Hobby {
   id: number;
@@ -15,6 +16,8 @@ interface Suggestion {
   date: string;
   hobby: string;
   description: string;
+  startTime: string;
+  endTime: string;
 }
 
 const Sidebar: React.FC<{ onEventAdded: () => void }> = ({ onEventAdded }) => {
@@ -68,6 +71,11 @@ const Sidebar: React.FC<{ onEventAdded: () => void }> = ({ onEventAdded }) => {
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      if (response.data.suggestions.length === 0) {
+        setError('No valid suggestions found - try again!');
+        return;
+      }
       
       setSuggestions(response.data.suggestions);
     } catch (err) {
@@ -84,16 +92,17 @@ const Sidebar: React.FC<{ onEventAdded: () => void }> = ({ onEventAdded }) => {
       if (!currentUser) throw new Error('Not signed in');
       
       const token = await currentUser.getIdToken();
-      const [year, month, day] = suggestion.date.split('-').map(Number);
+      const dateParts = suggestion.date.split('-');
 
       await axios.post(
         'http://localhost:5000/api/events',
         {
-          day,
-          month: month - 1,
-          year,
+          day: parseInt(dateParts[2]),
+          month: parseInt(dateParts[1]) - 1, // Convert to 0-based month
+          year: parseInt(dateParts[0]),
           title: suggestion.hobby,
-          time: '18:00',
+          time: suggestion.startTime,
+          endTime: suggestion.endTime,
           description: suggestion.description
         },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -103,14 +112,12 @@ const Sidebar: React.FC<{ onEventAdded: () => void }> = ({ onEventAdded }) => {
         'http://localhost:5000/api/hobbies',
         {
           hobby_name: suggestion.hobby,
-          // you can map description → goal or set a default skill level
           skill_level: 'beginner',
           goal: suggestion.description
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      console.log('Event added, calling refresh');
       onEventAdded();
       setSuggestions(prev => prev.filter(s => s.date !== suggestion.date));
     } catch (err) {
@@ -185,7 +192,10 @@ const Sidebar: React.FC<{ onEventAdded: () => void }> = ({ onEventAdded }) => {
               <div key={index} style={{ marginBottom: '1rem', padding: '0.5rem', borderBottom: '1px solid #eee' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                   <strong>{suggestion.hobby}</strong>
-                  <span style={{ color: '#666' }}>{suggestion.date}</span>
+                  <div style={{ textAlign: 'right' }}>
+                    <div>{suggestion.date}</div>
+                    <div>{formatTime(suggestion.startTime)} - {formatTime(suggestion.endTime)}</div>
+                  </div>
                 </div>
                 <p style={{ marginBottom: '0.5rem' }}>{suggestion.description}</p>
                 <button
