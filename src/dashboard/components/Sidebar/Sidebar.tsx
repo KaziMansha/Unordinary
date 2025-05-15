@@ -1,5 +1,7 @@
+// /src/dashboard/components/Sidebar/Sidebar.tsx
 import React, { useEffect, useState } from 'react';
 import { onAuthStateChanged, getAuth } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
 import { auth } from '../../../firebase-config';
 import './Sidebar.css';
 import axios from 'axios';
@@ -10,13 +12,20 @@ interface Hobby {
   skill_level?: string;
   goal?: string;
 }
+
 interface Suggestion {
   date: string;
   hobby: string;
   description: string;
 }
 
-const Sidebar: React.FC<{ onEventAdded: () => void }> = ({ onEventAdded }) => {
+interface SidebarProps {
+  onEventAdded: () => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
+  const navigate = useNavigate();
+
   /* ─────────── user & avatar ─────────── */
   const [user, setUser] = useState<any>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
@@ -34,20 +43,21 @@ const Sidebar: React.FC<{ onEventAdded: () => void }> = ({ onEventAdded }) => {
 
   /* listen for auth changes */
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => setUser(u));
-    return () => unsub();
+    const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
+    return () => unsubscribe();
   }, []);
 
-  /* fetch hobbies from API whenever user changes */
+  /* fetch hobbies from API */
   useEffect(() => {
     const fetchHobbies = async () => {
       if (!user) return;
       setHobbyLoading(true);
       try {
         const token = await user.getIdToken();
-        const res = await axios.get<Hobby[]>('http://localhost:5000/api/hobbies', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await axios.get<Hobby[]>(
+          'http://localhost:5000/api/hobbies',
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         setHobbies(res.data);
       } catch (err) {
         console.error(err);
@@ -59,7 +69,7 @@ const Sidebar: React.FC<{ onEventAdded: () => void }> = ({ onEventAdded }) => {
     fetchHobbies();
   }, [user]);
 
-  /* generate hobby‑based suggestions */
+  /* generate suggestions */
   const generateSuggestions = async () => {
     setLoading(true);
     setError('');
@@ -81,26 +91,26 @@ const Sidebar: React.FC<{ onEventAdded: () => void }> = ({ onEventAdded }) => {
     }
   };
 
-  /* add selected suggestion to calendar */
+  /* add suggestion to calendar */
   const addToCalendar = async (s: Suggestion) => {
     try {
       const current = getAuth().currentUser;
       if (!current) throw new Error('Not signed in');
       const token = await current.getIdToken();
-      const [y, m, d] = s.date.split('-').map(Number);
+      const [year, month, day] = s.date.split('-').map(Number);
       await axios.post(
         'http://localhost:5000/api/events',
         {
-          day: d,
-          month: m - 1,
-          year: y,
+          day,
+          month: month - 1,
+          year,
           title: s.hobby,
           time: '18:00',
           description: s.description,
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      onEventAdded();                       // refresh calendar
+      onEventAdded();
       setSuggestions((prev) => prev.filter((x) => x !== s));
     } catch (err) {
       console.error(err);
@@ -108,37 +118,44 @@ const Sidebar: React.FC<{ onEventAdded: () => void }> = ({ onEventAdded }) => {
     }
   };
 
-  /* avatar helpers */
+  /* avatar handlers */
   const pickFile = () => document.getElementById('profile-upload')?.click();
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
-      if (typeof ev.target?.result === 'string') setProfileImage(ev.target.result);
+      if (typeof ev.target?.result === 'string') {
+        setProfileImage(ev.target.result);
+      }
     };
     reader.readAsDataURL(file);
   };
 
-  /* ─────────── render ─────────── */
   return (
     <aside className="sidebar">
-      {/* top */}
+      {/* Top: Avatar & Email */}
       <div className="sidebar-top">
         <img
           src={
             profileImage ||
             'https://static-00.iconduck.com/assets.00/profile-default-icon-2048x2045-u3j7s5nj.png'
           }
+          alt="avatar"
           className="sidebar-avatar"
           onClick={pickFile}
-          alt="avatar"
         />
         <p className="sidebar-username">{user?.email || 'Guest'}</p>
-        <input id="profile-upload" type="file" accept="image/*" onChange={handleImageChange} hidden />
+        <input
+          id="profile-upload"
+          type="file"
+          accept="image/*"
+          onChange={handleImageChange}
+          hidden
+        />
       </div>
 
-      {/* hobbies */}
+      {/* Hobbies List */}
       <div className="sidebar-center">
         {hobbyLoading ? (
           <p>Loading hobbies…</p>
@@ -155,18 +172,37 @@ const Sidebar: React.FC<{ onEventAdded: () => void }> = ({ onEventAdded }) => {
         )}
       </div>
 
-      {/* suggestion button */}
+      {/* Survey Button */}
       <div className="sidebar-suggestions">
-        <button className="suggestions-button" onClick={generateSuggestions} disabled={loading}>
+        <button
+          className="suggestions-button"
+          onClick={() => navigate('/hobbiesurvey')}
+        >
+          Hobby Survey
+        </button>
+      </div>
+
+      {/* Smart Suggestions Button */}
+      <div className="sidebar-suggestions">
+        <button
+          className="suggestions-button"
+          onClick={generateSuggestions}
+          disabled={loading}
+        >
           {loading ? 'Loading…' : 'Get Smart Suggestions'}
         </button>
       </div>
 
-      {/* suggestions popup */}
+      {/* Suggestions Popup */}
       {suggestions.length > 0 && (
         <div className="popup-overlay" onClick={() => setSuggestions([])}>
           <div className="popup-content" onClick={(e) => e.stopPropagation()}>
-            <button className="popup-close" onClick={() => setSuggestions([])}>&times;</button>
+            <button
+              className="popup-close"
+              onClick={() => setSuggestions([])}
+            >
+              &times;
+            </button>
             <h3>Suggested Activities</h3>
             {suggestions.map((s, idx) => (
               <div key={idx} className="suggestion-block">
@@ -175,18 +211,25 @@ const Sidebar: React.FC<{ onEventAdded: () => void }> = ({ onEventAdded }) => {
                   <span>{s.date}</span>
                 </div>
                 <p>{s.description}</p>
-                <button onClick={() => addToCalendar(s)}>Add to Calendar</button>
+                <button onClick={() => addToCalendar(s)}>
+                  Add to Calendar
+                </button>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* error popup */}
+      {/* Error Popup */}
       {error && (
         <div className="popup-overlay" onClick={() => setError('')}>
           <div className="popup-content" onClick={(e) => e.stopPropagation()}>
-            <button className="popup-close" onClick={() => setError('')}>&times;</button>
+            <button
+              className="popup-close"
+              onClick={() => setError('')}
+            >
+              &times;
+            </button>
             <p style={{ color: 'crimson' }}>{error}</p>
           </div>
         </div>
