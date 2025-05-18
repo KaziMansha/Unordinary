@@ -63,13 +63,7 @@ export function NavBar() {
             </div>
             <ul className = {classes.navLinks}>
                 <li>
-                    <Link to="*">Dashboard</Link>
-                </li>
-                <li>
                     <Link to="/feedback">Feedback</Link>
-                </li>
-                <li>
-                    <Link to="*">About</Link>
                 </li>
             </ul>
             <div className = {classes.authButtons}>
