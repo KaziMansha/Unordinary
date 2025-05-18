@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';   /* ← NEW */
+import { useNavigate } from 'react-router-dom';
 import './FeedbackForm.css';
 
 const hobbyOptions = ['Reading', 'Chess', 'Painting'];
@@ -7,17 +7,18 @@ const hobbyOptions = ['Reading', 'Chess', 'Painting'];
 interface HobbyRow {
   hobby: string;
   rating: number;
+  frequency: number;
+  usefulness: number;   // ← new field
 }
 
 export function FeedbackForm() {
-  const navigate = useNavigate();                /* ← NEW */
+  const navigate = useNavigate();
 
   const [rows, setRows] = useState<HobbyRow[]>([
-    { hobby: '', rating: 7 },
+    { hobby: '', rating: 7, frequency: 5, usefulness: 5 },
   ]);
   const [error, setError] = useState('');
 
-  /* ---------- helpers & handlers ---------- */
   const unusedHobbies = (idx: number) =>
     hobbyOptions.filter(
       (h) => !rows.some((r, i) => r.hobby === h && i !== idx)
@@ -30,19 +31,21 @@ export function FeedbackForm() {
       copy[idx] = {
         ...copy[idx],
         [field]:
-          field === 'rating' ? Number(e.target.value) : e.target.value,
+          field === 'hobby'
+            ? e.target.value
+            : Number(e.target.value),
       };
-      // prevent duplicate selections
       if (field === 'hobby') {
         const chosen = e.target.value;
         copy.forEach((r, i) => {
-          if (i !== idx && r.hobby === chosen) copy[i].hobby = '';
+          if (i !== idx && r.hobby === chosen) r.hobby = '';
         });
       }
       setRows(copy);
     };
 
-  const addRow = () => setRows([...rows, { hobby: '', rating: 7 }]);
+  const addRow = () =>
+    setRows([...rows, { hobby: '', rating: 7, frequency: 5, usefulness: 5 }]);
   const removeRow = (idx: number) =>
     setRows(rows.filter((_, i) => i !== idx));
 
@@ -53,20 +56,18 @@ export function FeedbackForm() {
       return;
     }
     setError('');
-    console.log('Submitted ratings:', rows);
-    /* TODO: POST to server */
-
+    console.log('Submitted rows:', rows);
+    // TODO: POST to server
     navigate('/Dashboard', { replace: true });
   };
 
-  /* ---------- render ---------- */
   return (
     <div className="fb-wrapper">
       <h2 className="fb-title">Rate your hobbies</h2>
-
       <form onSubmit={handleSubmit} className="fb-card">
         {rows.map((row, idx) => (
           <div key={idx} className="fb-row">
+            {/* Hobby dropdown */}
             <label className="fb-label">
               Hobby
               <select
@@ -82,14 +83,40 @@ export function FeedbackForm() {
               </select>
             </label>
 
+            {/* Rating slider */}
             <label className="fb-label fb-slider">
-              Rating <span>{row.rating}</span>
+              Rating <span>{row.rating}</span>
               <input
                 type="range"
                 min={1}
                 max={10}
                 value={row.rating}
                 onChange={updateRow(idx, 'rating')}
+              />
+            </label>
+
+            {/* Frequency slider */}
+            <label className="fb-label fb-slider">
+              Frequency <span>{row.frequency}</span>
+              <input
+                type="range"
+                min={1}
+                max={10}
+                value={row.frequency}
+                onChange={updateRow(idx, 'frequency')}
+              />
+            </label>
+
+            {/* Usefulness slider */}
+            <label className="fb-label fb-slider">
+              How likely does this hobby help achieve your goals? 
+              <span>{row.usefulness}</span>
+              <input
+                type="range"
+                min={1}
+                max={10}
+                value={row.usefulness}
+                onChange={updateRow(idx, 'usefulness')}
               />
             </label>
 
@@ -111,7 +138,7 @@ export function FeedbackForm() {
           onClick={addRow}
           disabled={rows.length === hobbyOptions.length}
         >
-          + Add another hobby
+          + Add another hobby
         </button>
 
         {error && <p className="fb-error">{error}</p>}
