@@ -50,6 +50,9 @@ const minutesToTime = (totalMinutes: number): string => {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 };
 
+const isValidDate = (dateStr: string) => /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
+const isValidTime = (timeStr: string) => /^\d{1,2}:\d{2}$/.test(timeStr);
+
 // API endpoint to upsert user data
 app.post('/api/users', async (req: Request, res: Response): Promise<void> => {
   // Expect the Firebase ID token in the Authorization header: "Bearer <token>"
@@ -140,6 +143,7 @@ app.post('/api/hobbies', async (req: Request, res: Response): Promise<void> => {
 
      if (hobbyResult.rowCount === 0) {
       res.status(200).json({ message: 'Hobby already exists' });
+      return;
     }
 
     res.status(200).json(hobbyResult.rows[0]);
@@ -196,7 +200,6 @@ app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<voi
     // 3. Fetch events in the next 2 weeks
     const eventsQ = await pool.query(`
       SELECT 
-        id, 
         day, 
         month, 
         year, 
@@ -210,33 +213,49 @@ app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<voi
       ORDER BY year, month, day, time
     `, [userId]);
 
+    // 4. Format calendar data for AI analysis
+    const calendarData = eventsQ.rows.map(event => ({
+      date: `${event.year}-${String(event.month + 1).padStart(2,'0')}-${String(event.day).padStart(2,'0')}`,
+      start: event.time,
+      end: event.endTime || event.time,
+      title: event.title.replace(/"/g, '\\"')
+    }));
+
     // 4. Find free time slots
-    const freeSlots: { date: string; start: string; end: string }[] = [];
+    let freeSlots: { date: string; start: string; end: string }[] = [];
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const twoWeeksLater = new Date(today);
     twoWeeksLater.setDate(today.getDate() + 14);
+    
     const eventsByDate: { [key: string]: any[] } = {};
 
     const dateArray: Date[] = [];
-    for (let d = new Date(today); d <= twoWeeksLater; d.setDate(d.getDate() + 1)) {
-      dateArray.push(new Date(d));
+    const currentDate = new Date(today);
+    while (currentDate <= twoWeeksLater) {
+      dateArray.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
     }
 
     dateArray.forEach(currentDate => {
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth(); // 0-based
-      const day = currentDate.getDate();
-      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const day = currentDate.getDate();
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+    if (currentDate < today || currentDate > twoWeeksLater) return;
+
+    const existingSlots = freeSlots.filter(slot => slot.date === dateStr);
+    freeSlots = freeSlots.filter(slot => slot.date !== dateStr);
       
       // Get events for this date
-      const daysEvents = eventsQ.rows.filter(event => 
-        event.year === year && 
-        event.month === month && 
-        event.day === day
-      ).sort((a, b) => convertToMinutes(a.time) - convertToMinutes(b.time));
+    const daysEvents = eventsQ.rows.filter(event => 
+      event.year === year && 
+      event.month === month && 
+      event.day === day
+    ).sort((a, b) => convertToMinutes(a.time) - convertToMinutes(b.time));
 
-      // If no events, add full day slot
-      if (daysEvents.length === 0) {
+    if (daysEvents.length === 0) {
         freeSlots.push({
           date: dateStr,
           start: '08:00',
@@ -304,34 +323,40 @@ app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<voi
       'SELECT hobby, skill_level, goal FROM hobbies WHERE user_id = $1',
       [userId]
     );
-    const existing = hobbiesQ.rows
-      .map(h => `${h.hobby} (${h.skill_level}, goal: ${h.goal})`)
-      .join('; ');
+    const existingHobbies = hobbiesQ.rows;
+
 
     // 6. Generate AI suggestions with actual time slots
     const aiResponse = await axios.post<GroqResponse>(
       'https://api.groq.com/openai/v1/chat/completions',
       {
         model: process.env.GROQ_MODEL,
-        temperature: 0.7,
+        temperature: 0.9,
         messages: [{
-          role: 'user',
+          role: "system",
           content: `
-          AVAILABLE TIME SLOTS (must use exactly these between ${today.toISOString().split('T')[0]} and ${twoWeeksLater.toISOString().split('T')[0]}):
-          ${freeSlots.map(slot => `${slot.date} ${slot.start}-${slot.end}`).join('\n')}
-
-          EXISTING HOBBIES:
-          ${existing || 'None'}
+          Analyze this calendar data... 
+          ${JSON.stringify(calendarData).replace(/"/g, '\\"')} // Escape quotes
+          Existing hobbies: 
+          ${existingHobbies.map(h => `${h.hobby} (${h.skill_level}, goal: ${h.goal})`).join('\n')}
 
           STRICT REQUIREMENTS:
-          1. Choose 3 different time slots from the AVAILABLE list
-          2. Activities must fit EXACTLY within the time windows
-          3. Format MUST BE:
+          1. Provide EXACTLY 3 suggestions
+          2.All suggestions MUST be between ${today.toISOString().split('T')[0]} and ${twoWeeksLater.toISOString().split('T')[0]}
+          3. Find 3 different 15-30 minute time slots between existing events
+          4. Suggest unique, specific hobby activities that fit in those gaps
+          5. Never suggest times outside 8AM-9PM
+          6. Take the user's existing schedule for the day into account. For example, if their calendar events that day include many meetings or indoor events, suggest their hobby suggestion to be related to the outdoors.
+          7. Format response exactly as:
           YYYY-MM-DD|HH:MM|HH:MM|Hobby Name|1-sentence description
-          4. Times must be in 24h format (e.g., 14:30 not 2:30 PM)
 
-          EXAMPLE:
-          2024-03-15|14:00|14:15|Meditation|Practice mindful breathing for 15 minutes
+          Example:
+          2024-03-15|14:00|14:15|Drawing|Quick 15-minute sketches of cityscapes to build observation skills from photography
+
+          Example for empty calendar:
+          2024-03-15|09:00|09:20|Morning Yoga|Quick flow to energize your day
+          2024-03-16|14:00|14:15|Sketching|Practice shading techniques
+          2024-03-17|18:30|18:45|Language Lesson|Review Spanish vocabulary
           `
         }]
       },
@@ -339,41 +364,41 @@ app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<voi
     );
 
     // 7. Parse AI response
-    const suggestions: GroqSuggestion[] = aiResponse.data.choices[0].message.content
-    .split('\n')
-    .filter(line => {
-      const parts = line.split('|');
-      return parts.length === 5 && 
-            parts.every(p => p.trim().length > 0) &&
-            /^\d{4}-\d{2}-\d{2}$/.test(parts[0].trim()) &&
-            /^\d{2}:\d{2}$/.test(parts[1].trim()) &&
-            /^\d{2}:\d{2}$/.test(parts[2].trim());
-    })
-    .slice(0, 3)
-    .map(line => {
-      const [date, startTime, endTime, hobby, description] = line.split('|').map(p => p.trim());
-      return { 
-        date,
-        startTime,
-        endTime,
-        hobby,
-        description
-      };
-    });
-
-    if (suggestions.length === 0) {
-      console.error('AI returned invalid suggestions:', aiResponse.data.choices[0].message.content);
-      res.status(200).json({ suggestions: [] });
-      return;
-    }
+    const suggestions = aiResponse.data.choices[0].message.content
+      .split('\n')
+      .filter(line => {
+        const parts = line.split('|');
+        if (parts.length !== 5) return false;
+        
+        const suggestionDate = new Date(parts[0] + 'T00:00:00Z');  // Parse as UTC
+        return (
+          isValidDate(parts[0]) &&
+          isValidTime(parts[1]) &&
+          isValidTime(parts[2]) &&
+          suggestionDate >= today &&
+          suggestionDate <= twoWeeksLater
+        );
+      })
+      .map(line => {  
+        const [date, start, end, hobby, desc] = line.split('|');
+        // Add padding to single-digit hours
+        const padTime = (t: string) => t.split(':').map(v => v.padStart(2, '0')).join(':');
+        return { 
+          date, 
+          startTime: padTime(start), 
+          endTime: padTime(end), 
+          hobby, 
+          description: desc 
+        };
+      });
 
     res.status(200).json({ suggestions });
-
+    
   } catch (error) {
-    console.error('Error generating AI-driven suggestions:', error);
+    console.error('Error generating suggestions:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-});
+});  
 
 
 /*

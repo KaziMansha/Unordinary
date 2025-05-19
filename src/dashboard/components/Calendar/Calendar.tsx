@@ -212,14 +212,22 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
                     .sort((a, b) => a.time.localeCompare(b.time))
                     .map(event => (
                       <div 
-                        key={event.id} // Add this
+                        key={event.id}
                         className="event-preview"
                         onClick={(e) => { e.stopPropagation(); setActiveEvent(event); }}
                       >
                         <span>
                           {formatTime(event.time)} - {event.endTime && formatTime(event.endTime)}: {event.title}
                         </span>
-                        <button className="delete-button">×</button>
+                        <button 
+                          className="delete-button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteEvent(event.id);
+                          }}
+                        >
+                          ×
+                        </button>
                       </div>
                     ))}
                 </div>
