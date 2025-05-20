@@ -34,6 +34,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
   const [hobbies, setHobbies] = useState<Hobby[]>([]);
   const [hobbyLoading, setHobbyLoading] = useState(false);
 
+  /* ─── collapse control ───────── */
+  const [showAll, setShowAll] = useState(false);
+
   /* ─────────── smart suggestions ─────────── */
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(false);
@@ -43,7 +46,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
 
   /* listen for auth changes */
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
+    const unsubscribe = onAuthStateChanged(auth, u => setUser(u));
     return () => unsubscribe();
   }, []);
 
@@ -54,10 +57,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
       setHobbyLoading(true);
       try {
         const token = await user.getIdToken();
-        const res = await axios.get<Hobby[]>(
-          'http://localhost:5000/api/hobbies',
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const res = await axios.get<Hobby[]>('http://localhost:5000/api/hobbies', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setHobbies(res.data);
       } catch (err) {
         console.error(err);
@@ -110,21 +112,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      await axios.post(
-        'http://localhost:5000/api/hobbies',
-        {
-          hobby_name: suggestion.hobby,
-          // you can map description → goal or set a default skill level
-          skill_level: 'beginner',
-          goal: suggestion.description
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      console.log('Event added, calling refresh');
       onEventAdded();
-      setSuggestions((prev) => prev.filter((x) => x !== s));
+      setSuggestions(prev => prev.filter(x => x !== s));
     } catch (err) {
       console.error(err);
       setError('Failed to add event');
@@ -137,13 +126,17 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = ev => {
       if (typeof ev.target?.result === 'string') {
         setProfileImage(ev.target.result);
       }
     };
     reader.readAsDataURL(file);
   };
+
+  /* slice for collapse */
+  const visibleHobbies = showAll ? hobbies : hobbies.slice(0, 3);
+  const hiddenCount = hobbies.length - visibleHobbies.length;
 
   return (
     <aside className="sidebar">
@@ -175,13 +168,27 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
         ) : hobbies.length === 0 ? (
           <p>No hobbies yet</p>
         ) : (
-          hobbies.map((h, i) => (
-            <div key={h.id} className="hobby-item">
-              <p>Hobby #{i + 1}: {h.hobby}</p>
-              <p>Skill: {h.skill_level || 'N/A'}</p>
-              <p>Goal: {h.goal || 'N/A'}</p>
-            </div>
-          ))
+          <>
+            {visibleHobbies.map((h, i) => (
+              <div key={h.id} className="hobby-item">
+                <p>Hobby #{i + 1}: {h.hobby}</p>
+                <p>Skill: {h.skill_level || 'N/A'}</p>
+                <p>Goal: {h.goal || 'N/A'}</p>
+              </div>
+            ))}
+
+            {hiddenCount > 0 && (
+              <button
+                className="suggestions-button"
+                style={{ margin: '0.5rem auto' }}
+                onClick={() => setShowAll(prev => !prev)}
+              >
+                {showAll
+                  ? `Show less ▲`
+                  : `View ${hiddenCount} more ▼`}
+              </button>
+            )}
+          </>
         )}
       </div>
 
@@ -191,7 +198,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
           className="suggestions-button"
           onClick={() => navigate('/hobbiesurvey')}
         >
-          Hobby Survey
+          Edit Hobby
         </button>
       </div>
 
@@ -209,7 +216,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
       {/* Suggestions Popup */}
       {suggestions.length > 0 && (
         <div className="popup-overlay" onClick={() => setSuggestions([])}>
-          <div className="popup-content" onClick={(e) => e.stopPropagation()}>
+          <div className="popup-content" onClick={e => e.stopPropagation()}>
             <button
               className="popup-close"
               onClick={() => setSuggestions([])}
@@ -236,7 +243,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
       {/* Error Popup */}
       {error && (
         <div className="popup-overlay" onClick={() => setError('')}>
-          <div className="popup-content" onClick={(e) => e.stopPropagation()}>
+          <div className="popup-content" onClick={e => e.stopPropagation()}>
             <button
               className="popup-close"
               onClick={() => setError('')}
