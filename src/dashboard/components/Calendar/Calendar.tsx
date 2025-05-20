@@ -29,6 +29,7 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
   const [endTimeInput, setEndTimeInput] = useState('');
   const [descriptionInput, setDescriptionInput] = useState('');
   const [activeEvent, setActiveEvent] = useState<CalendarEvent | null>(null);
+  const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -91,6 +92,11 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
     setSelectedDay(dateObj.getDate());
     setCurrentDate(dateObj);
     setShowForm(true);
+    setEditMode(false);
+    setTitleInput('');
+    setTimeInput('');
+    setEndTimeInput('');
+    setDescriptionInput('');
   };
 
   const addEvent = async () => {
@@ -117,14 +123,42 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
         if (!response.ok) throw new Error('Failed to save event');
         const savedEvent = await response.json();
         setEvents([...events, savedEvent]);
-        setTitleInput('');
-        setTimeInput('');
-        setEndTimeInput('');
-        setDescriptionInput('');
         setShowForm(false);
       } catch (error) {
         console.error('Error adding event:', error);
       }
+    }
+  };
+
+  const updateEvent = async () => {
+    if (!activeEvent) return;
+    const updatedEvent = {
+      ...activeEvent,
+      title: titleInput,
+      time: timeInput,
+      endTime: endTimeInput,
+      description: descriptionInput,
+      day: selectedDay ?? activeEvent.day,
+      month: currentDate.getMonth(),
+      year: currentDate.getFullYear(),
+    };
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      if (!idToken) return;
+
+      const response = await fetch(`http://localhost:5000/api/events/${activeEvent.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+        body: JSON.stringify(updatedEvent),
+      });
+
+      if (!response.ok) throw new Error('Failed to update event');
+      const data = await response.json();
+      setEvents(events.map(e => e.id === activeEvent.id ? data : e));
+      setShowForm(false);
+      setActiveEvent(null);
+    } catch (error) {
+      console.error('Error updating event:', error);
     }
   };
 
@@ -145,6 +179,18 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
     }
   };
 
+  const handleEditEvent = (event: CalendarEvent) => {
+    setActiveEvent(event);
+    setTitleInput(event.title);
+    setTimeInput(event.time);
+    setEndTimeInput(event.endTime || '');
+    setDescriptionInput(event.description || '');
+    setSelectedDay(event.day);
+    setCurrentDate(new Date(event.year, event.month, event.day));
+    setEditMode(true);
+    setShowForm(true);
+  };
+
   const getEventsForDay = (day: number, monthParam: number, yearParam: number) => {
     return events.filter(
       (event) => event.day === day && event.month === monthParam && event.year === yearParam
@@ -155,6 +201,35 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
     const [hours, minutes] = time.split(':').map(Number);
     const hourHeight = 40;
     return (hours * hourHeight) + (minutes / 60) * hourHeight;
+  };
+
+  const calculateHeight = (startTime: string, endTime?: string) => {
+    if (!endTime) return 40;
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    const [endHour, endMinute] = endTime.split(':').map(Number);
+    const startTotalMinutes = startHour * 60 + startMinute;
+    const endTotalMinutes = endHour * 60 + endMinute;
+    const durationMinutes = Math.max(endTotalMinutes - startTotalMinutes, 30);
+    const heightPerMinute = 40 / 60;
+    return durationMinutes * heightPerMinute;
+  };
+
+  const groupOverlappingEvents = (events: CalendarEvent[]) => {
+    const sortedEvents = events.sort((a, b) => a.time.localeCompare(b.time));
+    const groups: CalendarEvent[][] = [];
+    sortedEvents.forEach(event => {
+      let placed = false;
+      for (const group of groups) {
+        const lastEvent = group[group.length - 1];
+        if (lastEvent.endTime && event.time >= lastEvent.endTime) {
+          group.push(event);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) groups.push([event]);
+    });
+    return groups;
   };
 
   return (
@@ -238,20 +313,30 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
                 onClick={() => handleDayClick(dateObj)}
               >
                 <div className="day-time-slots">
-                  {getEventsForDay(dateObj.getDate(), dateObj.getMonth(), dateObj.getFullYear())
-                    .map(event => {
+                  {groupOverlappingEvents(getEventsForDay(dateObj.getDate(), dateObj.getMonth(), dateObj.getFullYear())).map((group, groupIndex, groupArray) =>
+                    group.map((event) => {
                       const topPosition = calculateTop(event.time);
+                      const eventHeight = calculateHeight(event.time, event.endTime);
+                      const widthPercent = 100 / groupArray.length;
+                      const leftPercent = groupIndex * widthPercent;
+
                       return (
                         <div
                           key={event.id}
                           className="week-event"
-                          style={{ top: `${topPosition}px` }}
+                          style={{
+                            top: `${topPosition}px`,
+                            height: `${eventHeight}px`,
+                            width: `calc(${widthPercent}% - 10px)`,
+                            left: `calc(${leftPercent}% + 5px)`
+                          }}
                           onClick={(e) => { e.stopPropagation(); setActiveEvent(event); }}
                         >
-                          {event.title}
+                          {event.title}: {event.time} - {event.endTime}
                         </div>
                       );
-                    })}
+                    })
+                  )}
                 </div>
               </div>
             ))}
@@ -262,7 +347,7 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
       {showForm && (
         <div className="popup-overlay" onClick={() => setShowForm(false)}>
           <div className="popup-content" onClick={(e) => e.stopPropagation()}>
-            <h3>Add Event for {selectedDay} {currentDate.toLocaleString('default', { month: 'long' })}</h3>
+            <h3>{editMode ? 'Edit Event' : 'Add Event'} for {selectedDay} {currentDate.toLocaleString('default', { month: 'long' })}</h3>
             <label>Event Title</label>
             <input
               type="text"
@@ -287,21 +372,21 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
               placeholder="Event description"
               value={descriptionInput}
               onChange={(e) => setDescriptionInput(e.target.value)}
-              style={{ width: '100%', padding: '8px', margin: '5px 0', border: '1px solid #ccc', borderRadius: '4px' }}
             />
-            <button onClick={addEvent}>Add Event</button>
+            <button onClick={editMode ? updateEvent : addEvent}>{editMode ? 'Update Event' : 'Add Event'}</button>
             <button onClick={() => setShowForm(false)}>Cancel</button>
           </div>
         </div>
       )}
 
-      {activeEvent && (
+      {activeEvent && !editMode && (
         <div className="popup-overlay" onClick={() => setActiveEvent(null)}>
           <div className="popup-content" onClick={(e) => e.stopPropagation()}>
             <h3>{activeEvent.title}</h3>
             <p><strong>Start Time:</strong> {activeEvent.time}</p>
             <p><strong>End Time:</strong> {activeEvent.endTime}</p>
             <p><strong>Description:</strong> {activeEvent.description}</p>
+            <button onClick={() => handleEditEvent(activeEvent)}>Edit</button>
             <button onClick={() => setActiveEvent(null)}>Close</button>
           </div>
         </div>
@@ -309,3 +394,4 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
     </div>
   );
 }
+
