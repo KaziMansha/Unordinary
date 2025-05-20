@@ -51,10 +51,6 @@ AI-powered calendar optimization and hobby suggestion platform
   - Firebase Admin SDK for token verification  
 - **AI Integration**  
   - OpenAI / Groq AI for natural-language hobby scheduling  
-- **DevOps & Tools**  
-  - Docker (optional)  
-  - ESLint + Prettier  
-  - Cypress / Playwright for E2E testing  
 
 ---
 
