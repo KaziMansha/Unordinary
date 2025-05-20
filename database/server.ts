@@ -582,6 +582,112 @@ app.delete('/api/events/:id', async (req: Request, res: Response) => {
   }
 });
 
+// FEEDBACK
+// Get feedback-eligible hobbies
+app.get('/api/feedback-hobbies', async (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  try {
+    const token = authHeader.split('Bearer ')[1];
+    const decoded = await admin.auth().verifyIdToken(token);
+    const userRes = await pool.query(
+      'SELECT id FROM users WHERE firebase_uid = $1',
+      [decoded.uid]
+    );
+    
+    if (userRes.rowCount === 0) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    const hobbies = await pool.query(`
+      SELECT h.id, h.hobby 
+      FROM hobbies h
+      WHERE h.user_id = $1
+      AND NOT EXISTS (
+        SELECT 1 FROM hobby_feedback f 
+        WHERE f.hobby_id = h.id AND f.user_id = $1
+      )
+    `, [userRes.rows[0].id]);
+
+    res.json(hobbies.rows);
+  } catch (err) {
+    console.error('Error fetching feedback hobbies:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Submit feedback
+app.post('/api/feedback', async (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  try {
+    const token = authHeader.split('Bearer ')[1];
+    const decoded = await admin.auth().verifyIdToken(token);
+    const userRes = await pool.query(
+      'SELECT id FROM users WHERE firebase_uid = $1',
+      [decoded.uid]
+    );
+
+    if (userRes.rowCount === 0) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    const userId = userRes.rows[0].id;
+    const feedbackData = req.body;
+
+    // Validate input
+    if (!Array.isArray(feedbackData)) {
+      res.status(400).json({ error: 'Invalid feedback format' });
+      return;
+    }
+
+    // Insert feedback
+    const values = feedbackData.map(f => [
+      userId,
+      f.hobbyId,
+      f.rating,
+      f.frequency,
+      f.usefulness
+    ]);
+
+    const query = `
+      INSERT INTO hobby_feedback 
+        (user_id, hobby_id, rating, frequency, usefulness)
+      SELECT * FROM UNNEST(
+        $1::integer[],
+        $2::integer[],
+        $3::integer[],
+        $4::integer[],
+        $5::integer[]
+      )
+      RETURNING id;
+    `;
+
+    const result = await pool.query(query, [
+      values.map(v => v[0]),
+      values.map(v => v[1]),
+      values.map(v => v[2]),
+      values.map(v => v[3]),
+      values.map(v => v[4])
+    ]);
+
+    res.status(201).json({ success: true, count: result.rowCount });
+  } catch (err) {
+    console.error('Error submitting feedback:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
