@@ -12,7 +12,6 @@ AI-powered calendar optimization and hobby suggestion platform
 - [Getting Started](#getting-started)  
   - [Prerequisites](#prerequisites)  
   - [Installation](#installation)  
-  - [Running Locally](#running-locally)  
 
 ---
 
@@ -66,6 +65,26 @@ AI-powered calendar optimization and hobby suggestion platform
 - Node.js ≥ 18  
 - npm or Yarn  
 - PostgreSQL database  
-- Firebase project (Auth & Service Account)  
+- Firebase project (Auth & Service Account)
 
+### Installation
+1. **Clone the repo**
+```bash
+   git clone https://github.com/KaziMansha/Unordinary.git
+   cd Unordinary
+```
+2. **Install dependencies**
+```bash
+  npm install
+  npm install @mantine/core @mantine/hooks
+```
+3. **Start both servers**
+```bash
+  # Frontend
+  npm run dev
 
+  # Backend
+  npm start
+```
+4. **Open in browser**
+Navigate to http://localhost:5173
