@@ -80,25 +80,30 @@ app.post('/api/users', async (req: Request, res: Response): Promise<void> => {
 /* ──────────────────────────────────────────────
    POST  /api/hobbies  → store a new hobby
 ────────────────────────────────────────────── */
-app.post('/api/hobbies', async (req: Request, res: Response) => {
+app.post('/api/hobbies', async (req: Request, res: Response): Promise<void> => {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Unauthorized: No token provided' });
+    res.status(401).json({ error: 'Unauthorized: No token provided' });
+    return;
   }
   const idToken = authHeader.split('Bearer ')[1];
 
   try {
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     const firebaseUid = decodedToken.uid;
-    if (!firebaseUid) return res.status(400).json({ error: 'Invalid token' });
-
+    if (!firebaseUid) {
+      res.status(400).json({ error: 'Invalid token' });
+      return;
+    }
     /* map firebaseUid → users.id */
     const userRes = await pool.query(
       'SELECT id FROM users WHERE firebase_uid = $1',
       [firebaseUid]
     );
-    if (userRes.rowCount === 0)
-      return res.status(404).json({ error: 'User not found' });
+    if (userRes.rowCount === 0) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
     const userId = userRes.rows[0].id;
 
     const { hobby_name, skill_level, goal } = req.body;
@@ -117,8 +122,9 @@ app.post('/api/hobbies', async (req: Request, res: Response) => {
     const values = [userId, hobby_name, skill_level, goal];
     const hobbyResult = await pool.query(insertQuery, values);
 
-     if (hobbyResult.rowCount === 0) {
+    if (hobbyResult.rowCount === 0) {
       res.status(200).json({ message: 'Hobby already exists' });
+      return;
     }
 
     res.status(200).json(hobbyResult.rows[0]);
@@ -131,25 +137,31 @@ app.post('/api/hobbies', async (req: Request, res: Response) => {
 /* ──────────────────────────────────────────────
    GET  /api/hobbies  → return all hobbies for user
 ────────────────────────────────────────────── */
-app.get('/api/hobbies', async (req: Request, res: Response) => {
+app.get('/api/hobbies', async (req: Request, res: Response): Promise<void> => {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Unauthorized: No token provided' });
+    res.status(401).json({ error: 'Unauthorized: No token provided' });
+    return;
   }
   const idToken = authHeader.split('Bearer ')[1];
 
   try {
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     const firebaseUid = decodedToken.uid;
-    if (!firebaseUid) return res.status(400).json({ error: 'Invalid token' });
+    if (!firebaseUid) { 
+      res.status(400).json({ error: 'Invalid token' });
+      return;
+    }
 
     /* map firebaseUid → users.id */
     const userRes = await pool.query(
       'SELECT id FROM users WHERE firebase_uid = $1',
       [firebaseUid]
     );
-    if (userRes.rowCount === 0)
-      return res.status(404).json({ error: 'User not found' });
+    if (userRes.rowCount === 0) {
+      res.status(404).json({ error: 'User not found' });
+    return;
+    }
     const userId = userRes.rows[0].id;
 
     /* fetch hobbies */
@@ -158,10 +170,10 @@ app.get('/api/hobbies', async (req: Request, res: Response) => {
       [userId]
     );
 
-    return res.json(hobbyRes.rows);              // [] if none
+    res.json(hobbyRes.rows);              // [] if none
   } catch (err) {
     console.error('Error fetching hobbies:', err);
-    return res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
