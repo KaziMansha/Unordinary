@@ -1,5 +1,7 @@
+// /src/dashboard/components/Sidebar/Sidebar.tsx
 import React, { useEffect, useState } from 'react';
 import { onAuthStateChanged, getAuth } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
 import { auth } from '../../../firebase-config';
 import './Sidebar.css';
 import axios from 'axios';
@@ -20,64 +22,76 @@ interface Suggestion {
   endTime: string;
 }
 
-const Sidebar: React.FC<{ onEventAdded: () => void }> = ({ onEventAdded }) => {
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+interface SidebarProps {
+  onEventAdded: () => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
+  const navigate = useNavigate();
+
+  /* ─────────── user & avatar ─────────── */
   const [user, setUser] = useState<any>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+
+  /* ─────────── hobbies ─────────── */
   const [hobbies, setHobbies] = useState<Hobby[]>([]);
+  const [hobbyLoading, setHobbyLoading] = useState(false);
+
+  /* ─────────── smart suggestions ─────────── */
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(false);
+
+  /* ─────────── errors ─────────── */
   const [error, setError] = useState('');
 
-  // Dummy hobby data
-  const dummyHobbies: Hobby[] = [
-    { id: 1, hobby: 'Reading', skill_level: 'Intermediate', goal: 'To have fun' },
-    { id: 2, hobby: 'Chess', skill_level: 'Beginner', goal: 'To improve in skill' },
-    { id: 3, hobby: 'Painting', skill_level: 'Advanced', goal: 'Practice' },
-  ];
-  const useDummyData = true;
-
+  /* listen for auth changes */
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
+    const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
     return () => unsubscribe();
   }, []);
 
+  /* fetch hobbies from API */
   useEffect(() => {
-    if (useDummyData) {
-      setHobbies(dummyHobbies);
-    } else if (user) {
-      user.getIdToken().then((idToken: string) => {
-        fetch('http://localhost:5000/api/hobbies', {
-          headers: { Authorization: `Bearer ${idToken}` },
-        })
-          .then((res) => res.json())
-          .then((data: Hobby[]) => setHobbies(data))
-          .catch(console.error);
-      });
-    }
+    const fetchHobbies = async () => {
+      if (!user) return;
+      setHobbyLoading(true);
+      try {
+        const token = await user.getIdToken();
+        const res = await axios.get<Hobby[]>(
+          'http://localhost:5000/api/hobbies',
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setHobbies(res.data);
+      } catch (err) {
+        console.error(err);
+        setError('Failed to load hobbies');
+      } finally {
+        setHobbyLoading(false);
+      }
+    };
+    fetchHobbies();
   }, [user]);
 
+  /* generate suggestions */
   const generateSuggestions = async () => {
     setLoading(true);
     setError('');
     try {
-      const currentUser = getAuth().currentUser;
-      if (!currentUser) throw new Error('Not signed in');
-      
-      const token = await currentUser.getIdToken();
-      const response = await axios.post<{ suggestions: Suggestion[] }>(
+      const current = getAuth().currentUser;
+      if (!current) throw new Error('Not signed in');
+      const token = await current.getIdToken();
+      const res = await axios.post<{ suggestions: Suggestion[] }>(
         'http://localhost:5000/api/generate-hobby',
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      if (response.data.suggestions.length === 0) {
+      if (res.data.suggestions.length === 0) {
         setError('No valid suggestions found - try again!');
         return;
       }
       
-      setSuggestions(response.data.suggestions);
+      setSuggestions(res.data.suggestions);
     } catch (err) {
       console.error(err);
       setError('Failed to generate suggestions');
@@ -86,6 +100,7 @@ const Sidebar: React.FC<{ onEventAdded: () => void }> = ({ onEventAdded }) => {
     }
   };
 
+  /* add suggestion to calendar */
   const addToCalendar = async (suggestion: Suggestion) => {
     try {
       const currentUser = getAuth().currentUser;
@@ -119,36 +134,39 @@ const Sidebar: React.FC<{ onEventAdded: () => void }> = ({ onEventAdded }) => {
       );
       
       onEventAdded();
-      setSuggestions(prev => prev.filter(s => s.date !== suggestion.date));
+      setSuggestions((prev) => prev.filter((x) => x !== suggestion));
     } catch (err) {
       console.error(err);
       setError('Failed to add event');
     }
   };
 
+  /* avatar handlers */
+  const pickFile = () => document.getElementById('profile-upload')?.click();
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result;
-      if (typeof result === 'string') setProfileImage(result);
+    reader.onload = (ev) => {
+      if (typeof ev.target?.result === 'string') {
+        setProfileImage(ev.target.result);
+      }
     };
     reader.readAsDataURL(file);
   };
 
-  const handleAvatarClick = () => {
-    document.getElementById('profile-upload')?.click();
-  };
-
   return (
     <aside className="sidebar">
+      {/* Top: Avatar & Email */}
       <div className="sidebar-top">
         <img
-          src={profileImage || 'https://static-00.iconduck.com/assets.00/profile-default-icon-2048x2045-u3j7s5nj.png'}
-          alt="User Avatar"
+          src={
+            profileImage ||
+            'https://static-00.iconduck.com/assets.00/profile-default-icon-2048x2045-u3j7s5nj.png'
+          }
+          alt="avatar"
           className="sidebar-avatar"
-          onClick={handleAvatarClick}
+          onClick={pickFile}
         />
         <p className="sidebar-username">{user?.email || 'Guest'}</p>
         <input
@@ -156,27 +174,45 @@ const Sidebar: React.FC<{ onEventAdded: () => void }> = ({ onEventAdded }) => {
           type="file"
           accept="image/*"
           onChange={handleImageChange}
-          style={{ display: 'none' }}
+          hidden
         />
       </div>
 
+      {/* Hobbies List */}
       <div className="sidebar-center">
-        {hobbies.map((hobby, index) => (
-          <div key={hobby.id} className="hobby-item">
-            <p>Hobby #{index + 1}: {hobby.hobby}</p>
-            <p>Skill: {hobby.skill_level || 'N/A'}</p>
-            <p>Goal: {hobby.goal || 'N/A'}</p>
-          </div>
-        ))}
+        {hobbyLoading ? (
+          <p>Loading hobbies…</p>
+        ) : hobbies.length === 0 ? (
+          <p>No hobbies yet</p>
+        ) : (
+          hobbies.map((h, i) => (
+            <div key={h.id} className="hobby-item">
+              <p>Hobby #{i + 1}: {h.hobby}</p>
+              <p>Skill: {h.skill_level || 'N/A'}</p>
+              <p>Goal: {h.goal || 'N/A'}</p>
+            </div>
+          ))
+        )}
       </div>
 
+      {/* Survey Button */}
+      <div className="sidebar-suggestions">
+        <button
+          className="suggestions-button"
+          onClick={() => navigate('/hobbiesurvey')}
+        >
+          Hobby Survey
+        </button>
+      </div>
+
+      {/* Smart Suggestions Button */}
       <div className="sidebar-suggestions">
         <button
           className="suggestions-button"
           onClick={generateSuggestions}
           disabled={loading}
         >
-          {loading ? 'Loading...' : 'Get Smart Suggestions'}
+          {loading ? 'Loading…' : 'Get Smart Suggestions'}
         </button>
       </div>
 
@@ -184,7 +220,10 @@ const Sidebar: React.FC<{ onEventAdded: () => void }> = ({ onEventAdded }) => {
       {suggestions.length > 0 && (
         <div className="popup-overlay" onClick={() => setSuggestions([])}>
           <div className="popup-content" onClick={(e) => e.stopPropagation()}>
-            <button className="popup-close" onClick={() => setSuggestions([])}>
+            <button
+              className="popup-close"
+              onClick={() => setSuggestions([])}
+            >
               &times;
             </button>
             <h3 style={{ marginBottom: '1rem' }}>Suggested Activities</h3>
@@ -197,19 +236,8 @@ const Sidebar: React.FC<{ onEventAdded: () => void }> = ({ onEventAdded }) => {
                     <div>{formatTime(suggestion.startTime)} - {formatTime(suggestion.endTime)}</div>
                   </div>
                 </div>
-                <p style={{ marginBottom: '0.5rem' }}>{suggestion.description}</p>
-                <button
-                  onClick={() => addToCalendar(suggestion)}
-                  style={{
-                    width: '100%',
-                    padding: '0.25rem',
-                    background: '#7c5dfa',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
+                <p>{suggestion.description}</p>
+                <button onClick={() => addToCalendar(suggestion)}>
                   Add to Calendar
                 </button>
               </div>
@@ -218,13 +246,17 @@ const Sidebar: React.FC<{ onEventAdded: () => void }> = ({ onEventAdded }) => {
         </div>
       )}
 
+      {/* Error Popup */}
       {error && (
         <div className="popup-overlay" onClick={() => setError('')}>
           <div className="popup-content" onClick={(e) => e.stopPropagation()}>
-            <button className="popup-close" onClick={() => setError('')}>
+            <button
+              className="popup-close"
+              onClick={() => setError('')}
+            >
               &times;
             </button>
-            <p style={{ color: 'red' }}>{error}</p>
+            <p style={{ color: 'crimson' }}>{error}</p>
           </div>
         </div>
       )}
