@@ -26,31 +26,29 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
   const navigate = useNavigate();
 
-  /* ─────────── user & avatar ─────────── */
+  /* user & avatar */
   const [user, setUser] = useState<any>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
 
-  /* ─────────── hobbies ─────────── */
+  /* hobbies */
   const [hobbies, setHobbies] = useState<Hobby[]>([]);
   const [hobbyLoading, setHobbyLoading] = useState(false);
 
-  /* ─── collapse control ───────── */
+  /* show/collapse extra hobbies */
   const [showAll, setShowAll] = useState(false);
 
-  /* ─────────── smart suggestions ─────────── */
+  /* smart suggestions */
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(false);
 
-  /* ─────────── errors ─────────── */
+  /* errors */
   const [error, setError] = useState('');
 
-  /* listen for auth changes */
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, u => setUser(u));
     return () => unsubscribe();
   }, []);
 
-  /* fetch hobbies from API */
   useEffect(() => {
     const fetchHobbies = async () => {
       if (!user) return;
@@ -71,7 +69,6 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
     fetchHobbies();
   }, [user]);
 
-  /* generate suggestions */
   const generateSuggestions = async () => {
     setLoading(true);
     setError('');
@@ -93,7 +90,6 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
     }
   };
 
-  /* add suggestion to calendar */
   const addToCalendar = async (s: Suggestion) => {
     try {
       const current = getAuth().currentUser;
@@ -102,14 +98,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
       const [year, month, day] = s.date.split('-').map(Number);
       await axios.post(
         'http://localhost:5000/api/events',
-        {
-          day,
-          month: month - 1,
-          year,
-          title: s.hobby,
-          time: '18:00',
-          description: s.description,
-        },
+        { day, month: month - 1, year, title: s.hobby, time: '18:00', description: s.description },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       onEventAdded();
@@ -120,7 +109,6 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
     }
   };
 
-  /* avatar handlers */
   const pickFile = () => document.getElementById('profile-upload')?.click();
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -134,9 +122,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
     reader.readAsDataURL(file);
   };
 
-  /* slice for collapse */
+  // Determine which hobbies to show
   const visibleHobbies = showAll ? hobbies : hobbies.slice(0, 3);
-  const hiddenCount = hobbies.length - visibleHobbies.length;
+  const extraCount = hobbies.length - 3;
 
   return (
     <aside className="sidebar">
@@ -177,22 +165,23 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
               </div>
             ))}
 
-            {hiddenCount > 0 && (
-              <button
-                className="suggestions-button"
-                style={{ margin: '0.5rem auto' }}
-                onClick={() => setShowAll(prev => !prev)}
-              >
-                {showAll
-                  ? `Show less ▲`
-                  : `View ${hiddenCount} more ▼`}
-              </button>
+            {extraCount > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'center', margin: '0.5rem 0' }}>
+                <button
+                  className="suggestions-button"
+                  onClick={() => setShowAll(prev => !prev)}
+                >
+                  {showAll
+                    ? 'Show less ▲'
+                    : `View ${extraCount} more ▼`}
+                </button>
+              </div>
             )}
           </>
         )}
       </div>
 
-      {/* Survey Button */}
+      {/* Edit Hobby Button */}
       <div className="sidebar-suggestions">
         <button
           className="suggestions-button"
@@ -217,10 +206,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
       {suggestions.length > 0 && (
         <div className="popup-overlay" onClick={() => setSuggestions([])}>
           <div className="popup-content" onClick={e => e.stopPropagation()}>
-            <button
-              className="popup-close"
-              onClick={() => setSuggestions([])}
-            >
+            <button className="popup-close" onClick={() => setSuggestions([])}>
               &times;
             </button>
             <h3>Suggested Activities</h3>
@@ -244,10 +230,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
       {error && (
         <div className="popup-overlay" onClick={() => setError('')}>
           <div className="popup-content" onClick={e => e.stopPropagation()}>
-            <button
-              className="popup-close"
-              onClick={() => setError('')}
-            >
+            <button className="popup-close" onClick={() => setError('')}>
               &times;
             </button>
             <p style={{ color: 'crimson' }}>{error}</p>
