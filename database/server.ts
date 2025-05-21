@@ -38,6 +38,27 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
+// Time conversion utilities
+const convertToMinutes = (time: string): number => {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+
+const minutesToTime = (totalMinutes: number): string => {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+};
+
+  const isValidTimeRange = (start: string, end: string) => {
+    const startMinutes = convertToMinutes(start);
+    const endMinutes = convertToMinutes(end);
+    return startMinutes >= 480 && // 8 AM
+          endMinutes <= 1260 &&  // 9 PM
+          (endMinutes - startMinutes) >= 15 &&
+          (endMinutes - startMinutes) <= 30;
+  };
+
 // API endpoint to upsert user data
 app.post('/api/users', async (req: Request, res: Response): Promise<void> => {
   // Expect the Firebase ID token in the Authorization header: "Bearer <token>"
@@ -191,9 +212,11 @@ interface GroqResponse {
 }
 
 interface GroqSuggestion {
-  description: string;
+  date: string;
+  startTime: string;
+  endTime: string;
   hobby: string;
-  date: string; // YYYY-MM-DD
+  description: string;
 }
 
 app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<void> => {
@@ -204,112 +227,150 @@ app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<voi
   }
 
   try {
-    // 1. Verify user
     const idToken = authHeader.split('Bearer ')[1];
     const decoded = await admin.auth().verifyIdToken(idToken);
     const firebaseUid = decoded.uid;
 
-    // 2. Look up internal user ID
-    const userQ = await pool.query(
-      'SELECT id FROM users WHERE firebase_uid = $1',
-      [firebaseUid]
-    );
+    const userQ = await pool.query('SELECT id FROM users WHERE firebase_uid = $1', [firebaseUid]);
     if (userQ.rowCount === 0) {
       res.status(404).json({ error: 'User not found' });
       return;
     }
     const userId = userQ.rows[0].id;
 
-    // 3. Fetch all events in the next 2 weeks
-    const eventsQ = await pool.query(
-      `SELECT day, month, year, title, time
-       FROM events
-       WHERE user_id = $1
-         AND (year, month, day) BETWEEN
-           (EXTRACT(YEAR FROM NOW()), EXTRACT(MONTH FROM NOW()), EXTRACT(DAY FROM NOW()))
-           AND
-           (EXTRACT(YEAR FROM NOW() + INTERVAL '14 days'),
-            EXTRACT(MONTH FROM NOW() + INTERVAL '14 days'),
-            EXTRACT(DAY FROM NOW() + INTERVAL '14 days'))`,
-      [userId]
-    );
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const sevenDaysLater = new Date(today);
+    sevenDaysLater.setDate(today.getDate() + 7);
 
-    // 4. Organize events by date string
-    const eventsByDate: Record<string, string[]> = {};
-    eventsQ.rows.forEach(e => {
-      const date = `${e.year}-${String(e.month + 1).padStart(2, '0')}-${String(e.day).padStart(2, '0')}`;
-      const desc = `${e.time} – ${e.title}`;
+    const eventsQ = await pool.query(`
+      SELECT 
+        day, 
+        month, 
+        year, 
+        time, 
+        end_time as "endTime",
+        title
+      FROM events 
+      WHERE user_id = $1 
+        AND MAKE_DATE(year, month + 1, day) 
+          BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
+      ORDER BY year, month, day, time
+    `, [userId]);
+
+    const calendarData = eventsQ.rows.map(event => ({
+      date: `${event.year}-${String(event.month + 1).padStart(2, '0')}-${String(event.day).padStart(2, '0')}`,
+      start: event.time,
+      end: event.endTime || event.time,
+      title: event.title.replace(/"/g, '\\"')
+    }));
+
+    const eventsByDate: { [key: string]: any[] } = {};
+    eventsQ.rows.forEach(event => {
+      const date = `${event.year}-${String(event.month + 1).padStart(2, '0')}-${String(event.day).padStart(2, '0')}`;
       if (!eventsByDate[date]) eventsByDate[date] = [];
-      eventsByDate[date].push(desc);
+      eventsByDate[date].push({
+        ...event,
+        endTime: event.endTime || event.time
+      });
     });
 
-    // 5. Build a human-readable calendar block
-    const today = new Date();
-    const calendarLines: string[] = [];
-    for (let i = 0; i <= 14; i++) {
+    let freeSlots: { date: string; start: string; end: string }[] = [];
+
+    for (let i = 0; i <= 7; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
-      const ds = d.toISOString().split('T')[0];
-      const evs = eventsByDate[ds];
-      calendarLines.push(
-        evs
-          ? `${ds}: ${evs.join(', ')}`
-          : `${ds}: (no events)`
-      );
+      const dateStr = d.toISOString().split('T')[0];
+      if (!eventsByDate[dateStr]) {
+        freeSlots.push({ date: dateStr, start: '08:00', end: '17:00' });
+      }
     }
 
-    // 6. Fetch existing hobbies for context
-    const hobbiesQ = await pool.query(
-      'SELECT hobby, skill_level, goal FROM hobbies WHERE user_id = $1',
-      [userId]
-    );
-    const existing = hobbiesQ.rows
-      .map(h => `${h.hobby} (${h.skill_level}, goal: ${h.goal})`)
-      .join('; ');
+    Object.entries(eventsByDate).forEach(([date, events]) => {
+      const sorted = events.sort((a, b) => convertToMinutes(a.time) - convertToMinutes(b.time));
+      if (convertToMinutes(sorted[0].time) > 480) {
+        freeSlots.push({ date, start: '08:00', end: minutesToTime(convertToMinutes(sorted[0].time)) });
+      }
 
-    // 7. Prompt the AI with the full calendar
+      for (let i = 0; i < sorted.length - 1; i++) {
+        const gapStart = convertToMinutes(sorted[i].endTime);
+        const gapEnd = convertToMinutes(sorted[i + 1].time);
+        if (gapEnd - gapStart >= 15) {
+          freeSlots.push({ date, start: minutesToTime(gapStart), end: minutesToTime(gapEnd) });
+        }
+      }
+
+      const lastEnd = convertToMinutes(sorted[sorted.length - 1].endTime);
+      if (lastEnd < 1020) {
+        freeSlots.push({ date, start: minutesToTime(lastEnd), end: '17:00' });
+      }
+    });
+
+    const hobbiesQ = await pool.query(`
+      SELECT id, hobby, skill_level, goal 
+      FROM hobbies 
+      WHERE user_id = $1 AND skill_level != 'pro'
+    `, [userId]);
+    const existingHobbies = hobbiesQ.rows;
+
     const aiResponse = await axios.post<GroqResponse>(
       'https://api.groq.com/openai/v1/chat/completions',
       {
         model: process.env.GROQ_MODEL,
+        temperature: 0.9,
         messages: [{
-          role: 'user',
+          role: "system",
           content: `
-          Here is your calendar for the next two weeks:
-          ${calendarLines.join('\n')}
+Analyze this calendar data... 
+${JSON.stringify(calendarData).replace(/"/g, '\\"')}
+Existing hobbies: 
+${existingHobbies.map(h => `${h.hobby} (${h.skill_level}, goal: ${h.goal})`).join('\n')}
 
-          Here are your existing hobbies (name, level, goal):
-          ${existing || 'None'}
+STRICT REQUIREMENTS:
+1. Provide EXACTLY 3 suggestions
+2. All suggestions MUST use the user's EXISTING hobbies listed above
+3. Find 3 different 15-30 minute time slots between existing events
+4. Suggest specific ACTIVITIES for existing hobbies that fit in those gaps
+5. Never suggest times outside 8AM-9PM
+6. Consider the day's schedule context (e.g., many meetings → outdoor activity)
+7. Format response exactly as:
+YYYY-MM-DD|HH:MM|HH:MM|Hobby Name|Activity description
 
-          From the free slots in your calendar, pick three days, choose a time, and recommend **hobby activities based off of your activities** (i.e., ones already in your existing list).
-
-          Take the user's existing schedule for the day into account. For example, if their calendar events that day include many meetings or indoor events, suggest their hobby suggestion to be related to the outdoors.
-
-          Make sure the hobby activity description are unique and bite-sized (able to complete in 15-30 minutes).
-          Take your existing schedule for the day into account. For example, if your calendar events that day include many meetings or indoor events, have hobby suggestion to be related to the outdoors.
-
-          **Reply EXACTLY** (no extra text) in this format:
-          YYYY-MM-DD|Hobby Name|1-sentence description
-          `
+**If the user has an empty calendar, suggest only within the next 7 days of today's date (${today.toISOString().split('T')[0]} – ${sevenDaysLater.toISOString().split('T')[0]})**
+`
         }]
       },
       { headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}` } }
     );
 
-    // 8. Parse the AI’s lines into suggestions
-    const suggestions: GroqSuggestion[] = aiResponse.data.choices[0].message.content
+    const suggestions = aiResponse.data.choices[0].message.content
       .split('\n')
-      .filter(line => line.trim())
-      .slice(0, 3)
+      .filter(line => {
+        const parts = line.split('|');
+        if (parts.length !== 5) return false;
+        const dateObj = new Date(parts[0]);
+        return (
+          dateObj >= today &&
+          dateObj <= sevenDaysLater &&
+          !isNaN(dateObj.getTime())
+        );
+      })
       .map(line => {
-        const [date, hobby, description] = line.split('|');
-        return { date, hobby, description };
+        const [date, start, end, hobby, desc] = line.split('|');
+        const pad = (t: string) => t.split(':').map(x => x.padStart(2, '0')).join(':');
+        return {
+          date,
+          startTime: pad(start),
+          endTime: pad(end),
+          hobby,
+          description: desc
+        };
       });
 
     res.status(200).json({ suggestions });
 
   } catch (error) {
-    console.error('Error generating AI-driven suggestions:', error);
+    console.error('Error generating suggestions:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -344,9 +405,10 @@ app.get('/api/events', async (req: Request, res: Response) => {
     const userId = userResult.rows[0].id;
 
     const eventsResult = await pool.query(
-      'SELECT * FROM events WHERE user_id = $1',
-      [userId]
+    'SELECT id, day, month, year, title, time, end_time as "endTime", description FROM events WHERE user_id = $1',
+    [userId]
     );
+
     res.status(200).json(eventsResult.rows);
 
     console.log(`[Server] Found ${eventsResult.rowCount} events for user ${userId}`);
@@ -382,18 +444,19 @@ app.post('/api/events', async (req: Request, res: Response) => {
     }
     const userId = userResult.rows[0].id;
 
-    const { day, month, year, title, time } = req.body;
+    const { day, month, year, title, time, endTime, description } = req.body;
     if (!day || !month || !year || !title || !time) {
       res.status(400).json({ error: 'Missing required fields' });
       return;
     }
 
     const insertQuery = `
-      INSERT INTO events (user_id, day, month, year, title, time)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *;
+    INSERT INTO events (user_id, day, month, year, title, time, end_time, description)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING *;
     `;
-    const values = [userId, day, month, year, title, time];
+
+    const values = [userId, day, month, year, title, time, endTime || null, description || null];
     const result = await pool.query(insertQuery, values);
     res.status(201).json(result.rows[0]);
 
@@ -451,6 +514,112 @@ app.delete('/api/events/:id', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error deleting event:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// FEEDBACK
+// Get feedback-eligible hobbies
+app.get('/api/feedback-hobbies', async (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  try {
+    const token = authHeader.split('Bearer ')[1];
+    const decoded = await admin.auth().verifyIdToken(token);
+    const userRes = await pool.query(
+      'SELECT id FROM users WHERE firebase_uid = $1',
+      [decoded.uid]
+    );
+    
+    if (userRes.rowCount === 0) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    const hobbies = await pool.query(`
+      SELECT h.id, h.hobby 
+      FROM hobbies h
+      WHERE h.user_id = $1
+      AND NOT EXISTS (
+        SELECT 1 FROM hobby_feedback f 
+        WHERE f.hobby_id = h.id AND f.user_id = $1
+      )
+    `, [userRes.rows[0].id]);
+
+    res.json(hobbies.rows);
+  } catch (err) {
+    console.error('Error fetching feedback hobbies:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Submit feedback
+app.post('/api/feedback', async (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  try {
+    const token = authHeader.split('Bearer ')[1];
+    const decoded = await admin.auth().verifyIdToken(token);
+    const userRes = await pool.query(
+      'SELECT id FROM users WHERE firebase_uid = $1',
+      [decoded.uid]
+    );
+
+    if (userRes.rowCount === 0) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    const userId = userRes.rows[0].id;
+    const feedbackData = req.body;
+
+    // Validate input
+    if (!Array.isArray(feedbackData)) {
+      res.status(400).json({ error: 'Invalid feedback format' });
+      return;
+    }
+
+    // Insert feedback
+    const values = feedbackData.map(f => [
+      userId,
+      f.hobbyId,
+      f.rating,
+      f.frequency,
+      f.usefulness
+    ]);
+
+    const query = `
+      INSERT INTO hobby_feedback 
+        (user_id, hobby_id, rating, frequency, usefulness)
+      SELECT * FROM UNNEST(
+        $1::integer[],
+        $2::integer[],
+        $3::integer[],
+        $4::integer[],
+        $5::integer[]
+      )
+      RETURNING id;
+    `;
+
+    const result = await pool.query(query, [
+      values.map(v => v[0]),
+      values.map(v => v[1]),
+      values.map(v => v[2]),
+      values.map(v => v[3]),
+      values.map(v => v[4])
+    ]);
+
+    res.status(201).json({ success: true, count: result.rowCount });
+  } catch (err) {
+    console.error('Error submitting feedback:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { auth } from '../../../firebase-config';
 import './Sidebar.css';
 import axios from 'axios';
+import { formatTime } from '../../../utils/timeUtils.ts';
 
 interface Hobby {
   id: number;
@@ -17,6 +18,8 @@ interface Suggestion {
   date: string;
   hobby: string;
   description: string;
+  startTime: string;
+  endTime: string;
 }
 
 interface SidebarProps {
@@ -44,6 +47,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
   /* errors */
   const [error, setError] = useState('');
 
+  const [usedSuggestions, setUsedSuggestions] = useState<Suggestion[]>([]);
+
+  /* listen for auth changes */
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, u => setUser(u));
     return () => unsubscribe();
@@ -76,12 +82,31 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
       const current = getAuth().currentUser;
       if (!current) throw new Error('Not signed in');
       const token = await current.getIdToken();
+
       const res = await axios.post<{ suggestions: Suggestion[] }>(
         'http://localhost:5000/api/generate-hobby',
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setSuggestions(res.data.suggestions);
+
+      // Filter out previously seen suggestions (same hobby + time slot)
+      const freshSuggestions = res.data.suggestions.filter(
+        (newS) =>
+          !usedSuggestions.some(
+            (oldS) =>
+              oldS.date === newS.date &&
+              oldS.startTime === newS.startTime &&
+              oldS.hobby === newS.hobby
+          )
+      );
+
+      // if (freshSuggestions.length === 0) {
+      //   setError('No valid suggestions found - try again!');
+      //   return;
+      // }
+
+      setSuggestions(freshSuggestions);
+      setUsedSuggestions((prev) => [...prev, ...freshSuggestions]);
     } catch (err) {
       console.error(err);
       setError('Failed to generate suggestions');
@@ -90,24 +115,38 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
     }
   };
 
-  const addToCalendar = async (s: Suggestion) => {
-    try {
-      const current = getAuth().currentUser;
-      if (!current) throw new Error('Not signed in');
-      const token = await current.getIdToken();
-      const [year, month, day] = s.date.split('-').map(Number);
-      await axios.post(
-        'http://localhost:5000/api/events',
-        { day, month: month - 1, year, title: s.hobby, time: '18:00', description: s.description },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      onEventAdded();
-      setSuggestions(prev => prev.filter(x => x !== s));
-    } catch (err) {
-      console.error(err);
-      setError('Failed to add event');
-    }
-  };
+  /* add suggestion to calendar */
+  const addToCalendar = async (suggestion: Suggestion) => {
+  try {
+    const currentUser = getAuth().currentUser;
+    if (!currentUser) throw new Error('Not signed in');
+    
+    const token = await currentUser.getIdToken();
+    const dateParts = suggestion.date.split('-');
+
+    // Only create the calendar event
+    await axios.post(
+      'http://localhost:5000/api/events',
+      {
+        day: parseInt(dateParts[2]),
+        month: parseInt(dateParts[1]) - 1,
+        year: parseInt(dateParts[0]),
+        title: suggestion.hobby,
+        time: suggestion.startTime,
+        endTime: suggestion.endTime,
+        description: suggestion.description
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    onEventAdded();
+    setUsedSuggestions([]);
+    setSuggestions((prev) => prev.filter((x) => x !== suggestion));
+  } catch (err) {
+    console.error(err);
+    setError('Failed to add event');
+  }
+};
 
   const pickFile = () => document.getElementById('profile-upload')?.click();
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -209,15 +248,18 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
             <button className="popup-close" onClick={() => setSuggestions([])}>
               &times;
             </button>
-            <h3>Suggested Activities</h3>
-            {suggestions.map((s, idx) => (
-              <div key={idx} className="suggestion-block">
-                <div className="suggestion-head">
-                  <strong>{s.hobby}</strong>
-                  <span>{s.date}</span>
+            <h3 style={{ marginBottom: '1rem' }}>Suggested Activities</h3>
+            {suggestions.map((suggestion, index) => (
+              <div key={index} style={{ marginBottom: '1rem', padding: '0.5rem', borderBottom: '1px solid #eee' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                  <strong>{suggestion.hobby}</strong>
+                  <div style={{ textAlign: 'right' }}>
+                    <div>{suggestion.date}</div>
+                    <div>{formatTime(suggestion.startTime)} - {formatTime(suggestion.endTime)}</div>
+                  </div>
                 </div>
-                <p>{s.description}</p>
-                <button onClick={() => addToCalendar(s)}>
+                <p>{suggestion.description}</p>
+                <button onClick={() => addToCalendar(suggestion)}>
                   Add to Calendar
                 </button>
               </div>
