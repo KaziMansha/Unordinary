@@ -44,6 +44,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
   /* ─────────── errors ─────────── */
   const [error, setError] = useState('');
 
+  const [usedSuggestions, setUsedSuggestions] = useState<Suggestion[]>([]);
+
   /* listen for auth changes */
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
@@ -80,18 +82,31 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
       const current = getAuth().currentUser;
       if (!current) throw new Error('Not signed in');
       const token = await current.getIdToken();
+
       const res = await axios.post<{ suggestions: Suggestion[] }>(
         'http://localhost:5000/api/generate-hobby',
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      if (res.data.suggestions.length === 0) {
-        setError('No valid suggestions found - try again!');
-        return;
-      }
-      
-      setSuggestions(res.data.suggestions);
+      // Filter out previously seen suggestions (same hobby + time slot)
+      const freshSuggestions = res.data.suggestions.filter(
+        (newS) =>
+          !usedSuggestions.some(
+            (oldS) =>
+              oldS.date === newS.date &&
+              oldS.startTime === newS.startTime &&
+              oldS.hobby === newS.hobby
+          )
+      );
+
+      // if (freshSuggestions.length === 0) {
+      //   setError('No valid suggestions found - try again!');
+      //   return;
+      // }
+
+      setSuggestions(freshSuggestions);
+      setUsedSuggestions((prev) => [...prev, ...freshSuggestions]);
     } catch (err) {
       console.error(err);
       setError('Failed to generate suggestions');
@@ -102,44 +117,36 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
 
   /* add suggestion to calendar */
   const addToCalendar = async (suggestion: Suggestion) => {
-    try {
-      const currentUser = getAuth().currentUser;
-      if (!currentUser) throw new Error('Not signed in');
-      
-      const token = await currentUser.getIdToken();
-      const dateParts = suggestion.date.split('-');
+  try {
+    const currentUser = getAuth().currentUser;
+    if (!currentUser) throw new Error('Not signed in');
+    
+    const token = await currentUser.getIdToken();
+    const dateParts = suggestion.date.split('-');
 
-      await axios.post(
-        'http://localhost:5000/api/events',
-        {
-          day: parseInt(dateParts[2]),
-          month: parseInt(dateParts[1]) - 1, // Convert to 0-based month
-          year: parseInt(dateParts[0]),
-          title: suggestion.hobby,
-          time: suggestion.startTime,
-          endTime: suggestion.endTime,
-          description: suggestion.description
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+    // Only create the calendar event
+    await axios.post(
+      'http://localhost:5000/api/events',
+      {
+        day: parseInt(dateParts[2]),
+        month: parseInt(dateParts[1]) - 1,
+        year: parseInt(dateParts[0]),
+        title: suggestion.hobby,
+        time: suggestion.startTime,
+        endTime: suggestion.endTime,
+        description: suggestion.description
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-      await axios.post(
-        'http://localhost:5000/api/hobbies',
-        {
-          hobby_name: suggestion.hobby,
-          skill_level: 'beginner',
-          goal: suggestion.description
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      onEventAdded();
-      setSuggestions((prev) => prev.filter((x) => x !== suggestion));
-    } catch (err) {
-      console.error(err);
-      setError('Failed to add event');
-    }
-  };
+    onEventAdded();
+    setUsedSuggestions([]);
+    setSuggestions((prev) => prev.filter((x) => x !== suggestion));
+  } catch (err) {
+    console.error(err);
+    setError('Failed to add event');
+  }
+};
 
   /* avatar handlers */
   const pickFile = () => document.getElementById('profile-upload')?.click();

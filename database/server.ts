@@ -50,8 +50,14 @@ const minutesToTime = (totalMinutes: number): string => {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 };
 
-const isValidDate = (dateStr: string) => /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
-const isValidTime = (timeStr: string) => /^\d{1,2}:\d{2}$/.test(timeStr);
+  const isValidTimeRange = (start: string, end: string) => {
+    const startMinutes = convertToMinutes(start);
+    const endMinutes = convertToMinutes(end);
+    return startMinutes >= 480 && // 8 AM
+          endMinutes <= 1260 &&  // 9 PM
+          (endMinutes - startMinutes) >= 15 &&
+          (endMinutes - startMinutes) <= 30;
+  };
 
 // API endpoint to upsert user data
 app.post('/api/users', async (req: Request, res: Response): Promise<void> => {
@@ -221,23 +227,22 @@ app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<voi
   }
 
   try {
-    // 1. Verify user
     const idToken = authHeader.split('Bearer ')[1];
     const decoded = await admin.auth().verifyIdToken(idToken);
     const firebaseUid = decoded.uid;
 
-    // 2. Look up internal user ID
-    const userQ = await pool.query(
-      'SELECT id FROM users WHERE firebase_uid = $1',
-      [firebaseUid]
-    );
+    const userQ = await pool.query('SELECT id FROM users WHERE firebase_uid = $1', [firebaseUid]);
     if (userQ.rowCount === 0) {
       res.status(404).json({ error: 'User not found' });
       return;
     }
     const userId = userQ.rows[0].id;
 
-    // 3. Fetch events in the next 2 weeks
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const sevenDaysLater = new Date(today);
+    sevenDaysLater.setDate(today.getDate() + 7);
+
     const eventsQ = await pool.query(`
       SELECT 
         day, 
@@ -249,124 +254,65 @@ app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<voi
       FROM events 
       WHERE user_id = $1 
         AND MAKE_DATE(year, month + 1, day) 
-          BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '14 days'
+          BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
       ORDER BY year, month, day, time
     `, [userId]);
 
-    // 4. Format calendar data for AI analysis
     const calendarData = eventsQ.rows.map(event => ({
-      date: `${event.year}-${String(event.month + 1).padStart(2,'0')}-${String(event.day).padStart(2,'0')}`,
+      date: `${event.year}-${String(event.month + 1).padStart(2, '0')}-${String(event.day).padStart(2, '0')}`,
       start: event.time,
       end: event.endTime || event.time,
       title: event.title.replace(/"/g, '\\"')
     }));
 
-    // 4. Find free time slots
-    let freeSlots: { date: string; start: string; end: string }[] = [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const twoWeeksLater = new Date(today);
-    twoWeeksLater.setDate(today.getDate() + 14);
-    
     const eventsByDate: { [key: string]: any[] } = {};
-
-    const dateArray: Date[] = [];
-    const currentDate = new Date(today);
-    while (currentDate <= twoWeeksLater) {
-      dateArray.push(new Date(currentDate));
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    dateArray.forEach(currentDate => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const day = currentDate.getDate();
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-
-    if (currentDate < today || currentDate > twoWeeksLater) return;
-
-    const existingSlots = freeSlots.filter(slot => slot.date === dateStr);
-    freeSlots = freeSlots.filter(slot => slot.date !== dateStr);
-      
-      // Get events for this date
-    const daysEvents = eventsQ.rows.filter(event => 
-      event.year === year && 
-      event.month === month && 
-      event.day === day
-    ).sort((a, b) => convertToMinutes(a.time) - convertToMinutes(b.time));
-
-    if (daysEvents.length === 0) {
-        freeSlots.push({
-          date: dateStr,
-          start: '08:00',
-          end: '17:00'
-        });
-        return;
-      }
-
-      // Existing slot detection logic...
-      // [Keep the existing code for checking before first event, between events, and after last event]
-    });
-
-    // Group events by date
     eventsQ.rows.forEach(event => {
       const date = `${event.year}-${String(event.month + 1).padStart(2, '0')}-${String(event.day).padStart(2, '0')}`;
       if (!eventsByDate[date]) eventsByDate[date] = [];
       eventsByDate[date].push({
         ...event,
-        endTime: event.endTime || event.time // Handle events without end time
+        endTime: event.endTime || event.time
       });
     });
 
-    // Find slots for each day
+    let freeSlots: { date: string; start: string; end: string }[] = [];
+
+    for (let i = 0; i <= 7; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const dateStr = d.toISOString().split('T')[0];
+      if (!eventsByDate[dateStr]) {
+        freeSlots.push({ date: dateStr, start: '08:00', end: '17:00' });
+      }
+    }
+
     Object.entries(eventsByDate).forEach(([date, events]) => {
-      const sortedEvents = events.sort((a, b) => convertToMinutes(a.time) - convertToMinutes(b.time));
-      
-      // Check before first event (8:00 AM to first event)
-      const firstEventStart = convertToMinutes(sortedEvents[0].time);
-      if (firstEventStart > 480) { // 8:00 AM = 480 minutes
-        freeSlots.push({
-          date,
-          start: '08:00',
-          end: minutesToTime(firstEventStart)
-        });
+      const sorted = events.sort((a, b) => convertToMinutes(a.time) - convertToMinutes(b.time));
+      if (convertToMinutes(sorted[0].time) > 480) {
+        freeSlots.push({ date, start: '08:00', end: minutesToTime(convertToMinutes(sorted[0].time)) });
       }
 
-      // Check between events
-      for (let i = 0; i < sortedEvents.length - 1; i++) {
-        const currentEnd = convertToMinutes(sortedEvents[i].endTime);
-        const nextStart = convertToMinutes(sortedEvents[i + 1].time);
-        
-        if (nextStart - currentEnd >= 15) { // Minimum 15 minute gap
-          freeSlots.push({
-            date,
-            start: minutesToTime(currentEnd),
-            end: minutesToTime(nextStart)
-          });
+      for (let i = 0; i < sorted.length - 1; i++) {
+        const gapStart = convertToMinutes(sorted[i].endTime);
+        const gapEnd = convertToMinutes(sorted[i + 1].time);
+        if (gapEnd - gapStart >= 15) {
+          freeSlots.push({ date, start: minutesToTime(gapStart), end: minutesToTime(gapEnd) });
         }
       }
 
-      // Check after last event (last event end to 17:00)
-      const lastEvent = sortedEvents[sortedEvents.length - 1];
-      const lastEventEnd = convertToMinutes(lastEvent.endTime);
-      if (lastEventEnd < 1020) { // 17:00 = 1020 minutes
-        freeSlots.push({
-          date,
-          start: minutesToTime(lastEventEnd),
-          end: '17:00'
-        });
+      const lastEnd = convertToMinutes(sorted[sorted.length - 1].endTime);
+      if (lastEnd < 1020) {
+        freeSlots.push({ date, start: minutesToTime(lastEnd), end: '17:00' });
       }
     });
 
-    // 5. Fetch existing hobbies for context
-    const hobbiesQ = await pool.query(
-      'SELECT hobby, skill_level, goal FROM hobbies WHERE user_id = $1',
-      [userId]
-    );
+    const hobbiesQ = await pool.query(`
+      SELECT id, hobby, skill_level, goal 
+      FROM hobbies 
+      WHERE user_id = $1 AND skill_level != 'pro'
+    `, [userId]);
     const existingHobbies = hobbiesQ.rows;
 
-
-    // 6. Generate AI suggestions with actual time slots
     const aiResponse = await axios.post<GroqResponse>(
       'https://api.groq.com/openai/v1/chat/completions',
       {
@@ -375,70 +321,59 @@ app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<voi
         messages: [{
           role: "system",
           content: `
-          Analyze this calendar data... 
-          ${JSON.stringify(calendarData).replace(/"/g, '\\"')} // Escape quotes
-          Existing hobbies: 
-          ${existingHobbies.map(h => `${h.hobby} (${h.skill_level}, goal: ${h.goal})`).join('\n')}
+Analyze this calendar data... 
+${JSON.stringify(calendarData).replace(/"/g, '\\"')}
+Existing hobbies: 
+${existingHobbies.map(h => `${h.hobby} (${h.skill_level}, goal: ${h.goal})`).join('\n')}
 
-          STRICT REQUIREMENTS:
-          1. Provide EXACTLY 3 suggestions
-          2.All suggestions MUST be between ${today.toISOString().split('T')[0]} and ${twoWeeksLater.toISOString().split('T')[0]}
-          3. Find 3 different 15-30 minute time slots between existing events
-          4. Suggest unique, specific hobby activities that fit in those gaps
-          5. Never suggest times outside 8AM-9PM
-          6. Take the user's existing schedule for the day into account. For example, if their calendar events that day include many meetings or indoor events, suggest their hobby suggestion to be related to the outdoors.
-          7. Format response exactly as:
-          YYYY-MM-DD|HH:MM|HH:MM|Hobby Name|1-sentence description
+STRICT REQUIREMENTS:
+1. Provide EXACTLY 3 suggestions
+2. All suggestions MUST use the user's EXISTING hobbies listed above
+3. Find 3 different 15-30 minute time slots between existing events
+4. Suggest specific ACTIVITIES for existing hobbies that fit in those gaps
+5. Never suggest times outside 8AM-9PM
+6. Consider the day's schedule context (e.g., many meetings → outdoor activity)
+7. Format response exactly as:
+YYYY-MM-DD|HH:MM|HH:MM|Hobby Name|Activity description
 
-          Example:
-          2024-03-15|14:00|14:15|Drawing|Quick 15-minute sketches of cityscapes to build observation skills from photography
-
-          Example for empty calendar:
-          2024-03-15|09:00|09:20|Morning Yoga|Quick flow to energize your day
-          2024-03-16|14:00|14:15|Sketching|Practice shading techniques
-          2024-03-17|18:30|18:45|Language Lesson|Review Spanish vocabulary
-          `
+**If the user has an empty calendar, suggest only within the next 7 days of today's date (${today.toISOString().split('T')[0]} – ${sevenDaysLater.toISOString().split('T')[0]})**
+`
         }]
       },
       { headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}` } }
     );
 
-    // 7. Parse AI response
     const suggestions = aiResponse.data.choices[0].message.content
       .split('\n')
       .filter(line => {
         const parts = line.split('|');
         if (parts.length !== 5) return false;
-        
-        const suggestionDate = new Date(parts[0] + 'T00:00:00Z');  // Parse as UTC
+        const dateObj = new Date(parts[0]);
         return (
-          isValidDate(parts[0]) &&
-          isValidTime(parts[1]) &&
-          isValidTime(parts[2]) &&
-          suggestionDate >= today &&
-          suggestionDate <= twoWeeksLater
+          dateObj >= today &&
+          dateObj <= sevenDaysLater &&
+          !isNaN(dateObj.getTime())
         );
       })
-      .map(line => {  
+      .map(line => {
         const [date, start, end, hobby, desc] = line.split('|');
-        // Add padding to single-digit hours
-        const padTime = (t: string) => t.split(':').map(v => v.padStart(2, '0')).join(':');
-        return { 
-          date, 
-          startTime: padTime(start), 
-          endTime: padTime(end), 
-          hobby, 
-          description: desc 
+        const pad = (t: string) => t.split(':').map(x => x.padStart(2, '0')).join(':');
+        return {
+          date,
+          startTime: pad(start),
+          endTime: pad(end),
+          hobby,
+          description: desc
         };
       });
 
     res.status(200).json({ suggestions });
-    
+
   } catch (error) {
     console.error('Error generating suggestions:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-});  
+});
 
 
 /*
