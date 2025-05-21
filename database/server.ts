@@ -309,7 +309,7 @@ app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<voi
     const hobbiesQ = await pool.query(`
       SELECT id, hobby, skill_level, goal 
       FROM hobbies 
-      WHERE user_id = $1 AND skill_level != 'pro'
+      WHERE user_id = $1
     `, [userId]);
     const existingHobbies = hobbiesQ.rows;
 
@@ -321,23 +321,25 @@ app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<voi
         messages: [{
           role: "system",
           content: `
-Analyze this calendar data... 
-${JSON.stringify(calendarData).replace(/"/g, '\\"')}
-Existing hobbies: 
-${existingHobbies.map(h => `${h.hobby} (${h.skill_level}, goal: ${h.goal})`).join('\n')}
+            Analyze this calendar data... 
+            ${JSON.stringify(calendarData).replace(/"/g, '\\"')}
+            Existing hobbies: 
+            ${existingHobbies.map(h => `${h.hobby} (${h.skill_level}, goal: ${h.goal})`).join('\n')}
 
-STRICT REQUIREMENTS:
-1. Provide EXACTLY 3 suggestions
-2. All suggestions MUST use the user's EXISTING hobbies listed above
-3. Find 3 different 15-30 minute time slots between existing events
-4. Suggest specific ACTIVITIES for existing hobbies that fit in those gaps
-5. Never suggest times outside 8AM-9PM
-6. Consider the day's schedule context (e.g., many meetings → outdoor activity)
-7. Format response exactly as:
-YYYY-MM-DD|HH:MM|HH:MM|Hobby Name|Activity description
+            STRICT REQUIREMENTS:
+            1. Provide EXACTLY 3 suggestions
+            2. All suggestions MUST use the user's EXISTING hobbies listed above
+            3. Find 3 different 15-30 minute time slots between existing events
+            4. Suggest specific ACTIVITIES for existing hobbies that fit in those gaps
+            5. Never suggest times outside 8AM-9PM
+            6. Consider the day's schedule context (e.g., many meetings → outdoor activity)
+            7. Format response exactly as:
+            YYYY-MM-DD|HH:MM|HH:MM|Hobby Name|Activity description
 
-**If the user has an empty calendar, suggest only within the next 7 days of today's date (${today.toISOString().split('T')[0]} – ${sevenDaysLater.toISOString().split('T')[0]})**
-`
+            Give activity suggestions appropriate for the user’s skill level. For example, suggest more advanced drills for 'pro' users and introductory exercises for 'beginner' users.
+
+            If the user has an empty calendar, suggest only within the next 7 days of today's date (${today.toISOString().split('T')[0]} – ${sevenDaysLater.toISOString().split('T')[0]})
+            `
         }]
       },
       { headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}` } }
@@ -371,6 +373,81 @@ YYYY-MM-DD|HH:MM|HH:MM|Hobby Name|Activity description
 
   } catch (error) {
     console.error('Error generating suggestions:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.put('/api/events/:id', async (req: Request, res: Response) => {
+  console.log(`\n[Server] PUT /api/events/${req.params.id} received with body:`, req.body);
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'Unauthorized: No token provided' });
+    return;
+  }
+
+  const idToken = authHeader.split('Bearer ')[1];
+
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const firebaseUid = decodedToken.uid;
+
+    const userResult = await pool.query(
+      'SELECT id FROM users WHERE firebase_uid = $1',
+      [firebaseUid]
+    );
+    if (userResult.rowCount === 0) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    const userId = userResult.rows[0].id;
+
+    const eventId = req.params.id;
+    const { day, month, year, title, time, endTime, description } = req.body;
+
+    if (!day || !month || !year || !title || !time) {
+      res.status(400).json({ error: 'Missing required fields' });
+      return;
+    }
+
+    const updateQuery = `
+      UPDATE events
+      SET day = $1,
+          month = $2,
+          year = $3,
+          title = $4,
+          time = $5,
+          end_time = $6,
+          description = $7
+      WHERE id = $8 AND user_id = $9
+      RETURNING *;
+    `;
+
+    const values = [
+      day,
+      month,
+      year,
+      title,
+      time,
+      endTime || null,
+      description || null,
+      eventId,
+      userId
+    ];
+
+    const result = await pool.query(updateQuery, values);
+
+    if (result.rowCount === 0) {
+      res.status(404).json({ error: 'Event not found or unauthorized' });
+      return;
+    }
+
+    res.status(200).json(result.rows[0]);
+
+    console.log(`[Server] Updated event ${eventId} for user ${userId}:`, result.rows[0]);
+
+  } catch (error) {
+    console.error('Error updating event:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

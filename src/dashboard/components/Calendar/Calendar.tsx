@@ -147,37 +147,45 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
 };
 
   const updateEvent = async () => {
-    if (!activeEvent) return;
-    const updatedEvent = {
-      ...activeEvent,
-      title: titleInput,
-      time: timeInput,
-      endTime: endTimeInput,
-      description: descriptionInput,
-      day: selectedDay ?? activeEvent.day,
-      month: currentDate.getMonth(),
-      year: currentDate.getFullYear(),
-    };
-    try {
-      const idToken = await auth.currentUser?.getIdToken();
-      if (!idToken) return;
+  if (!activeEvent) return;
 
-      const response = await fetch(`http://localhost:5000/api/events/${activeEvent.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
-        body: JSON.stringify(updatedEvent),
-      });
-
-      if (!response.ok) throw new Error('Failed to update event');
-      const data = await response.json();
-      setEvents(events.map(e => e.id === activeEvent.id ? data : e));
-      setShowForm(false);
-      setActiveEvent(null);
-    } catch (error) {
-      console.error('Error updating event:', error);
-    }
+  const updatedEvent = {
+    ...activeEvent,
+    title: titleInput,
+    time: timeInput,
+    endTime: endTimeInput,
+    description: descriptionInput,
+    day: selectedDay ?? activeEvent.day,
+    month: currentDate.getMonth(),
+    year: currentDate.getFullYear(),
   };
 
+  try {
+    const idToken = await auth.currentUser?.getIdToken();
+    if (!idToken) return;
+
+    const response = await fetch(`http://localhost:5000/api/events/${activeEvent.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+      body: JSON.stringify(updatedEvent),
+    });
+
+    if (!response.ok) throw new Error('Failed to update event');
+    const updatedFromServer = await response.json();
+
+    const normalized = {
+      ...updatedFromServer,
+      endTime: updatedFromServer.end_time,
+    };
+
+    setEvents(events.map(e => (e.id === activeEvent.id ? normalized : e)));
+
+    setShowForm(false);
+    setActiveEvent(null);
+  } catch (error) {
+    console.error('Error updating event:', error);
+  }
+};
   const deleteEvent = async (eventId: number) => {
     try {
       const idToken = await auth.currentUser?.getIdToken();

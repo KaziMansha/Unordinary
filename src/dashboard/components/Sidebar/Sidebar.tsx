@@ -49,6 +49,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
 
   const [usedSuggestions, setUsedSuggestions] = useState<Suggestion[]>([]);
 
+  const [showSuggestionsPopup, setShowSuggestionsPopup] = useState(false);
+
   /* listen for auth changes */
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, u => setUser(u));
@@ -99,6 +101,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
               oldS.hobby === newS.hobby
           )
       );
+
+      if (freshSuggestions.length > 0) {
+        setShowSuggestionsPopup(true); // <<< force popup to show
+      } else {
+        setError('No valid suggestions found - try again!');
+      }
 
       // if (freshSuggestions.length === 0) {
       //   setError('No valid suggestions found - try again!');
@@ -242,10 +250,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
       </div>
 
       {/* Suggestions Popup */}
-      {suggestions.length > 0 && (
-        <div className="popup-overlay" onClick={() => setSuggestions([])}>
+      {showSuggestionsPopup && (
+        <div className="popup-overlay" onClick={() => setShowSuggestionsPopup(false)}>
           <div className="popup-content" onClick={e => e.stopPropagation()}>
-            <button className="popup-close" onClick={() => setSuggestions([])}>
+            <button className="popup-close" onClick={() => setShowSuggestionsPopup(false)}>
               &times;
             </button>
             <h3 style={{ marginBottom: '1rem' }}>Suggested Activities</h3>
