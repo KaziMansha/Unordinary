@@ -1,0 +1,45 @@
+.mission-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5vw;
+  background-color: #ffffff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  gap: 4vw;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.mission-image {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.mission-image img {
+  width: 100%;
+  max-width: 700px;
+  height: auto;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.mission-content {
+  flex: 1;
+  padding-left: 1vw;
+  text-align: left;
+}
+
+.mission-title {
+  font-size: calc(2vw + 0.5rem);
+  color: #7c5dfa;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.mission-text {
+  font-size: calc(1vw + 0.5rem);
+  color: #555;
+  line-height: 1.6;
+  max-width: 600px;
+}

@@ -7,6 +7,7 @@ import DashboardPage from './dashboard/Dashboard'; // Dashboard with Calendar an
 import HobbySurvey from './dashboard/components/HobbySurvey/HobbySurvey.tsx'; // New dedicated survey page
 //import HobbySuggestion from './dashboard/components/HobbySuggestion/HobbySuggestion';
 import { FeedbackForm } from './home/components/FeedbackForm/FeedbackForm.tsx';
+import About from './about/About.tsx'
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
           <Route path="/feedback" element={<FeedbackForm />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/hobbiesurvey" element={<HobbySurvey />} />
+          <Route path="/about" element={<About />} />
           
         </Routes>
       </BrowserRouter>

@@ -1,111 +1,82 @@
 .navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 3rem;
-    background-color: #ffffff;
-    border-bottom: 2px solid #f1f1f1;
-    height: 80px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 4rem;
+  background-color: #ffffff;
+  border-bottom: 2px solid #f1f1f1;
+  height: 90px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.logo img {
+  height: 60px;
+  object-fit: contain;
+  display: block;
+}
+
+.navLinks {
+  display: flex;
+  gap: 2rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.navLinks a {
+  text-decoration: none;
+  color: #1f0044;
+  font-weight: 500;
+  font-size: 1.1rem;
+  transition: color 0.3s;
+}
+
+.navLinks a:hover {
+  color: #7c5dfa;
+}
+
+.authButtons {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.login,
+.signup {
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.5rem 1.2rem;
+  font-size: 1rem;
+  border-radius: 20px;
+  transition: all 0.3s ease;
+  line-height: 1.2;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.login {
+  background: none;
+  border: 2px solid #7c5dfa;
+  color: #7c5dfa;
+}
+
+.signup {
+  background-color: #7c5dfa;
+  color: white;
+  border: 2px solid #7c5dfa;
+}
+
+.login:hover,
+.signup:hover {
+  background-color: #5a4de0;
+  color: #fff;
+  border-color: #5a4de0;
+}
+
+/* Large screens */
+@media (min-width: 1440px) {
+  .navbar {
+    height: 100px;
+    padding: 1.5rem 6rem;
   }
-  
-  .logo {
-    height: 100%;
-    display: flex;
-    align-items: center;
-    padding: 0;
-    margin: 0;
-  }
-  
-  .logo img {
-    max-height: 100%;
-    width: auto;
-    object-fit: contain;
-    display: block; /* Removes extra spacing caused by inline elements */
-  }
-  
-  .navLinks {
-    display: flex;
-    gap: clamp(1rem, 3vw, 3rem);
-    list-style: none;
-    margin: 0;  /* Removes default margin */
-    padding: 0; /* Removes default padding */
-  }
-  
-  .navLinks li {
-    padding: 0;  /* Removes padding on list items */
-    margin: 0;   /* Removes margin on list items */
-  }
-  
-  .navLinks a {
-    text-decoration: none;
-    color: #1f0044;
-    font-weight: 500;
-    transition: color 0.3s;
-    display: block; /* Prevents extra inline space */
-    padding: 0;     /* Remove any padding */
-    margin: 0;      /* Remove any margin */
-  }
-  
-  .authButtons {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    margin: 0;
-    padding: 0;
-  }
-  
-  .login, .signup {
-    font-weight: 500;
-    cursor: pointer;
-    transition: color 0.3s, background-color 0.3s, border-color 0.3s;
-    padding: 0.5rem 1rem;
-    margin: 0;
-    line-height: 1;
-  }
-  
-  .login {
-    background: none;
-    border: none;
-    color: #1f0044;
-  }
-  
-  .signup {
-    background-color: #ffffff;
-    color: #1f0044;
-    border: 2px solid #f1f1f1;
-    border-radius: 20px;
-  }
-  
-  .login:hover, .signup:hover {
-    color: #ffffff;
-    background-color: #7c5dfa;
-    border-color: #7c5dfa;
-  }
-  
-  /* Large screens */
-  @media (min-width: 1440px) {
-    .navbar {
-      height: 100px;
-      padding: 1rem 6rem;
-    }
-  }
-  
-  /* Tablet screens */
-  @media (max-width: 768px) {
-    .navbar {
-      flex-direction: column;
-      height: auto;
-      padding: 1rem 2rem;
-    }
-  
-    .logo {
-      margin-bottom: 0.8rem;
-      height: 60px;
-    }
-  
-    .navLinks {
-      gap: 0.8rem;
-      margin-bottom: 0.8rem;
-    }
-  }
+}

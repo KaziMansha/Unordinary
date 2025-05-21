@@ -1,0 +1,40 @@
+.hero-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5vw;
+  background-color: #eef6fc;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  gap: 4vw;
+}
+
+.hero-content {
+  flex: 1;
+  max-width: 60%;
+}
+
+.hero-title {
+  font-size: calc(2.5vw + 1rem);
+  color: #7c5dfa;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.hero-subtitle {
+  font-size: calc(1.2vw + 0.5rem);
+  color: #444;
+  line-height: 1.6;
+}
+
+.hero-image {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.hero-image img {
+  width: 100%;
+  max-width: 700px;
+  height: auto;
+  border-radius: 8px;
+}
