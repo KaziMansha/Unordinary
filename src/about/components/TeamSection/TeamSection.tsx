@@ -9,26 +9,26 @@ import Adrian from '../../../assets/Adrian.jpg'
 const teamMembers = [
   {
     name: 'Anika Sujana',
-    role: 'Student #1',
-    bio: 'Enter short bio',
+    role: 'Backend Developer',
+    bio: "SWE at Microsoft, lover of thai food, wanting to make people's lives easier one git commit at a time!",
     imageSrc: Ank
   },
   {
     name: 'Hanz De Guzman',
-    role: 'Student #2',
-    bio: 'Enter short bio',
+    role: 'Backend Developer',
+    bio: "Hello I'm Hanz! I am the Backend developer and aspiring entrepreneur. I am passionate about building products that solve real-world problems.",
     imageSrc: Hanz
   },
   {
     name: 'Kazi Mansha',
-    role: 'Student #3',
-    bio: 'Enter short bio',
+    role: 'Frontend Developer',
+    bio: 'Hello everyone! I am a undergraduate senior at Hunter College where I major in Computer Science and minor in Music. I enjoy playing video games and sports.',
     imageSrc: Kazi
   },
   {
-    name: 'Adrian Mysliweic',
-    role: 'Student #4',
-    bio: 'Enter short bio',
+    name: 'Adrian Mysliwiec',
+    role: 'Frontend Developer',
+    bio: 'Double major in computer science and economics with a minor in sociology. Hoping to make a product that changes the world!.',
     imageSrc: Adrian
   }
 ];
