@@ -159,19 +159,7 @@
   );
 }
 
-.week-event {
-  position: absolute;
-  left: 5px;
-  right: 5px;
-  height: 40px;
-  background-color: #1a73e8;
-  color: white;
-  font-size: 0.75rem;
-  border-radius: 4px;
-  padding: 2px 4px;
-  overflow: hidden;
-  z-index: 1;
-}
+
 
 .hobby-suggestion-container {
   position: absolute;
@@ -247,9 +235,6 @@
   white-space: nowrap;
 }
 
-.week-event strong {
-  font-size: 0.8rem;
-}
 
 .event-preview {
   transition: all 0.3s ease;
@@ -257,5 +242,36 @@
 
 /* Ensure week events update properly */
 .week-event {
+  position: absolute;
+  background-color: #1a73e8;
+  color: white;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  overflow: hidden;
+  z-index: 1;
   transition: top 0.3s ease, height 0.3s ease;
+}
+
+.week-event .event-content {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+  height: 100%;
+  overflow: hidden;
+  align-content: center;
+}
+
+.week-event strong {
+  font-size: 0.75rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.week-event p {
+  font-size: 0.7rem;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
