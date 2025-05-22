@@ -7,7 +7,7 @@ import { CalendarCard } from './components/CalendarCard/CalendarCard.tsx'
 import sampleCalendar from './assets/sample_calendar.png'
 import kaziSample from './assets/kazi_sample.jpeg'
 import cartiSample from './assets/carti_sample.png'
-import creativeWriting from './assets/creative_writing.jpg'
+import skiing from './assets/skiing.jpg'
 import image1 from '../assets/image_1.png'
 import image2 from '../assets/image_2.jpg'
 import image3 from '../assets/image_3.jpg'
@@ -21,7 +21,7 @@ const HomePage: React.FC = () => {
         <div className = "home-page-wrapper">
             <Hero />
             <HobbyCard
-            image = { creativeWriting }
+            image = { skiing }
             hobbyName= 'Skiing'
             description='Skiing is a great way to enjoy the outdoors and stay active during the winter months. It can be a fun and exhilarating experience, whether you are a beginner or an expert.'
             />
