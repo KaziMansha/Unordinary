@@ -280,6 +280,31 @@ app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<voi
     const sevenDaysLater = new Date(today);
     sevenDaysLater.setDate(today.getDate() + 7);
 
+    let freeSlots: { date: string; start: string; end: string }[] = [];
+    const eventsByDate: { [key: string]: any[] } = {};
+
+    const dateArray: Date[] = [];
+      for (let d = new Date(today); d <= sevenDaysLater; d.setDate(d.getDate() + 1)) {
+        dateArray.push(new Date(d));
+      }
+
+      dateArray.forEach(currentDate => {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const day = currentDate.getDate();
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+        if (!eventsByDate[dateStr]) {
+          eventsByDate[dateStr] = [];
+        }
+
+        freeSlots.push({
+          date: dateStr,
+          start: '08:00',
+          end: '21:00'
+        });
+      });
+
     const eventsQ = await pool.query(`
       SELECT 
         day, 
@@ -302,7 +327,6 @@ app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<voi
       title: event.title.replace(/"/g, '\\"')
     }));
 
-    const eventsByDate: { [key: string]: any[] } = {};
     eventsQ.rows.forEach(event => {
       const date = `${event.year}-${String(event.month + 1).padStart(2, '0')}-${String(event.day).padStart(2, '0')}`;
       if (!eventsByDate[date]) eventsByDate[date] = [];
@@ -312,35 +336,75 @@ app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<voi
       });
     });
 
-    let freeSlots: { date: string; start: string; end: string }[] = [];
 
-    for (let i = 0; i <= 7; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
-      const dateStr = d.toISOString().split('T')[0];
-      if (!eventsByDate[dateStr]) {
-        freeSlots.push({ date: dateStr, start: '08:00', end: '17:00' });
-      }
-    }
+    // for (let i = 0; i <= 7; i++) {
+    //   const d = new Date(today);
+    //   d.setDate(today.getDate() + i);
+    //   const dateStr = d.toISOString().split('T')[0];
+      
+    //   freeSlots.push({ date: dateStr, start: '08:00', end: '21:00' });
+      
+    // }
 
     Object.entries(eventsByDate).forEach(([date, events]) => {
-      const sorted = events.sort((a, b) => convertToMinutes(a.time) - convertToMinutes(b.time));
-      if (convertToMinutes(sorted[0].time) > 480) {
-        freeSlots.push({ date, start: '08:00', end: minutesToTime(convertToMinutes(sorted[0].time)) });
+      freeSlots = freeSlots.filter(slot => slot.date !== date);
+      if (!Array.isArray(events) || events.length === 0) {
+      
+      freeSlots.push({ date, start: '08:00', end: '21:00' });
+      return;
+  }
+      if (!Array.isArray(events) || events.length === 0) return;
+
+      const validEvents = events.filter(e => typeof e.time === 'string' && e.time.trim() !== '');
+      if (validEvents.length === 0) return;
+
+      const sorted = validEvents.map(e => ({
+        time: e.time,
+        endTime: e.endTime || e.time
+      })).sort((a, b) => convertToMinutes(a.time) - convertToMinutes(b.time));
+
+      const firstStart = convertToMinutes(sorted[0].time);
+      if (firstStart > 480) {
+        freeSlots.push({
+          date,
+          start: '08:00',
+          end: minutesToTime(firstStart)
+        });
       }
 
       for (let i = 0; i < sorted.length - 1; i++) {
         const gapStart = convertToMinutes(sorted[i].endTime);
         const gapEnd = convertToMinutes(sorted[i + 1].time);
         if (gapEnd - gapStart >= 15) {
-          freeSlots.push({ date, start: minutesToTime(gapStart), end: minutesToTime(gapEnd) });
+          freeSlots.push({
+            date,
+            start: minutesToTime(gapStart),
+            end: minutesToTime(gapEnd)
+          });
         }
       }
 
       const lastEnd = convertToMinutes(sorted[sorted.length - 1].endTime);
-      if (lastEnd < 1020) {
-        freeSlots.push({ date, start: minutesToTime(lastEnd), end: '17:00' });
+      if (lastEnd < 1260) {
+        freeSlots.push({
+          date,
+          start: minutesToTime(lastEnd),
+          end: '21:00'
+        });
       }
+
+      for (let i = 0; i < sorted.length - 1; i++) {
+        const gapStart = convertToMinutes(sorted[i].endTime);
+        const gapEnd = convertToMinutes(sorted[i + 1].time);
+        if (gapEnd - gapStart >= 15) {
+          freeSlots.push({
+            date,
+            start: minutesToTime(gapStart),
+            end: minutesToTime(gapEnd)
+          });
+        }
+      }
+
     });
 
     const hobbiesQ = await pool.query(`
@@ -366,14 +430,17 @@ app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<voi
             STRICT REQUIREMENTS:
             1. Provide EXACTLY 3 suggestions
             2. All suggestions MUST use the user's EXISTING hobbies listed above
-            3. Find 3 different 15-30 minute time slots between existing events
-            4. Suggest specific ACTIVITIES for existing hobbies that fit in those gaps
-            5. Never suggest times outside 8AM-9PM
-            6. Consider the day's schedule context (e.g., many meetings → outdoor activity)
-            7. Format response exactly as:
+            3. Prioritize suggesting at least ONE activity on days with NO EVENTS (empty days)
+            4. Find 3 different 15-30 minute time slots between existing events
+            5. Suggest specific ACTIVITIES for existing hobbies that fit in those gaps
+            6. Never suggest times outside 8AM-9PM (use HH:MM format, e.g., 18:30 for 6:30 PM)...
+            7. Consider the day's schedule context. Have at least one suggestion on a day that is empty if there are empty days. (e.g., many meetings → outdoor activity)
+            8. Format response exactly as:
             YYYY-MM-DD|HH:MM|HH:MM|Hobby Name|Activity description
+            8. If user already has a hobby that matches the suggested hobby on a day, suggest a different activity for that hobby.
 
-            Give activity suggestions appropriate for the user’s skill level. For example, suggest more advanced drills for 'pro' users and introductory exercises for 'beginner' users.
+            
+            Give activity suggestions appropriate for the users skill level. For example, suggest more advanced drills for 'pro' users and introductory exercises for 'beginner' users.
 
             If the user has an empty calendar, suggest only within the next 7 days of today's date (${today.toISOString().split('T')[0]} – ${sevenDaysLater.toISOString().split('T')[0]})
             `
@@ -382,31 +449,36 @@ app.post('/api/generate-hobby', async (req: Request, res: Response): Promise<voi
       { headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}` } }
     );
 
+    console.log('Raw AI Response:', aiResponse.data.choices[0].message.content);
+
     const suggestions = aiResponse.data.choices[0].message.content
       .split('\n')
-      .filter(line => {
-        const parts = line.split('|');
-        if (parts.length !== 5) return false;
-        const dateObj = new Date(parts[0]);
-        return (
-          dateObj >= today &&
-          dateObj <= sevenDaysLater &&
-          !isNaN(dateObj.getTime())
-        );
-      })
-      .map(line => {
-        const [date, start, end, hobby, desc] = line.split('|');
-        const pad = (t: string) => t.split(':').map(x => x.padStart(2, '0')).join(':');
-        return {
-          date,
-          startTime: pad(start),
-          endTime: pad(end),
-          hobby,
-          description: desc
-        };
-      });
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+      const seen = new Set();
+      const uniqueSuggestions = [];
+      
 
-    res.status(200).json({ suggestions });
+      for (const line of suggestions) {
+        const parts = line.split('|');
+        if (parts.length !== 5) continue;
+
+        const key = `${parts[0]}|${parts[1]}|${parts[3]}`; // date|startTime|hobby
+        if (!seen.has(key)) {
+          seen.add(key);
+          const [date, start, end, hobby, desc] = parts;
+          const pad = (t: string) => t.split(':').map(x => x.padStart(2, '0')).join(':');
+          uniqueSuggestions.push({
+            date,
+            startTime: pad(start),
+            endTime: pad(end),
+            hobby,
+            description: desc
+          });
+        }
+      }
+
+    res.status(200).json({ suggestions: uniqueSuggestions });
 
   } catch (error) {
     console.error('Error generating suggestions:', error);

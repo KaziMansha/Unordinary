@@ -19,13 +19,15 @@ const HomePage: React.FC = () => {
             <Hero />
             <HobbyCard
             image = { creativeWriting }
-            hobbyName= 'Creative Writing'
-            description='Write short stories, poems, or even start your own novel. It’s a great way to express yourself and improve your communication skills.'
+            hobbyName= 'Skiing'
+            description='Skiing is a great way to enjoy the outdoors and stay active during the winter months. It can be a fun and exhilarating experience, whether you are a beginner or an expert.'
             />
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                 <CalendarCard
-                title="Event 1"
-                description="Check out this event!"            
+                title="Festival of the Brewpubs at Arapahoe Basin"
+                description=" Location: Waterville Valley Resort, New Hampshire{<br/>} 
+                                Date: Saturday, May 24, 2025
+                                Details: Join the community in preparing the mountain for summer with a clean-up event followed by a pig roast celebration."            
                 imageUrl= {sampleCalendar}
                 />
                 <CalendarCard

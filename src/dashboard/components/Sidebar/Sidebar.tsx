@@ -91,30 +91,18 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Filter out previously seen suggestions (same hobby + time slot)
-      const freshSuggestions = res.data.suggestions.filter(
-        (newS) =>
-          !usedSuggestions.some(
-            (oldS) =>
-              oldS.date === newS.date &&
-              oldS.startTime === newS.startTime &&
-              oldS.hobby === newS.hobby
-          )
-      );
+      setUsedSuggestions([]);
+
+      const freshSuggestions = res.data.suggestions;
 
       if (freshSuggestions.length > 0) {
-        setShowSuggestionsPopup(true); // <<< force popup to show
+        setShowSuggestionsPopup(true);
       } else {
         setError('No valid suggestions found - try again!');
       }
 
-      // if (freshSuggestions.length === 0) {
-      //   setError('No valid suggestions found - try again!');
-      //   return;
-      // }
-
       setSuggestions(freshSuggestions);
-      setUsedSuggestions((prev) => [...prev, ...freshSuggestions]);
+      setUsedSuggestions(freshSuggestions);
     } catch (err) {
       console.error(err);
       setError('Failed to generate suggestions');
@@ -123,29 +111,30 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
     }
   };
 
-  /* add suggestion to calendar */
-  const addToCalendar = async (suggestion: Suggestion) => {
-  try {
-    const currentUser = getAuth().currentUser;
-    if (!currentUser) throw new Error('Not signed in');
-    
-    const token = await currentUser.getIdToken();
-    const dateParts = suggestion.date.split('-');
 
-    // Only create the calendar event
-    await axios.post(
-      'http://localhost:5000/api/events',
-      {
-        day: parseInt(dateParts[2]),
-        month: parseInt(dateParts[1]) - 1,
-        year: parseInt(dateParts[0]),
-        title: suggestion.hobby,
-        time: suggestion.startTime,
-        endTime: suggestion.endTime,
-        description: suggestion.description
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    /* add suggestion to calendar */
+    const addToCalendar = async (suggestion: Suggestion) => {
+    try {
+      const currentUser = getAuth().currentUser;
+      if (!currentUser) throw new Error('Not signed in');
+      
+      const token = await currentUser.getIdToken();
+      const dateParts = suggestion.date.split('-');
+
+      // Only create the calendar event
+      await axios.post(
+        'http://localhost:5000/api/events',
+        {
+          day: parseInt(dateParts[2]),
+          month: parseInt(dateParts[1]) - 1,
+          year: parseInt(dateParts[0]),
+          title: suggestion.hobby,
+          time: suggestion.startTime,
+          endTime: suggestion.endTime,
+          description: suggestion.description
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
     onEventAdded();
     setUsedSuggestions([]);
