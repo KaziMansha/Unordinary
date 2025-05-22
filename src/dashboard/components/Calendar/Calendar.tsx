@@ -436,7 +436,11 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
               onChange={(e) => setDescriptionInput(e.target.value)}
             />
             <button onClick={editMode ? updateEvent : addEvent}>{editMode ? 'Update Event' : 'Add Event'}</button>
-            <button onClick={() => setShowForm(false)}>Cancel</button>
+            <button onClick={() => { setShowForm(false);
+              setEditMode(false); 
+              setActiveEvent(null);}}>
+                Cancel
+                </button>
           </div>
         </div>
       )}
