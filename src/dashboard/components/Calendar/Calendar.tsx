@@ -387,6 +387,24 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
         <div className="popup-overlay" onClick={() => setShowForm(false)}>
           <div className="popup-content" onClick={(e) => e.stopPropagation()}>
             <h3>{editMode ? 'Edit Event' : 'Add Event'} for {selectedDay} {currentDate.toLocaleString('default', { month: 'long' })}</h3>
+
+              {editMode && (
+                <>
+                  <label>Date</label>
+                  <input
+                    type="date"
+                    value={new Date(currentDate.getFullYear(), currentDate.getMonth(), selectedDay || 1)
+                      .toISOString()
+                      .split('T')[0]}
+                    onChange={(e) => {
+                      const selected = new Date(e.target.value);
+                      setSelectedDay(selected.getDate());
+                      setCurrentDate(selected);
+                    }}
+                  />
+                </>
+              )}
+
             <label>Event Title</label>
             <input
               type="text"
