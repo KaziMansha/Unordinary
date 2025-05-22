@@ -255,6 +255,12 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
     });
     return groups;
   };
+  
+  const getDateInputValue = (year: number, month: number, day: number): string => {
+    const localDate = new Date(year, month, day);
+    const tzOffset = localDate.getTimezoneOffset() * 60000;
+    return new Date(localDate.getTime() - tzOffset).toISOString().split('T')[0];
+  };
 
   return (
     <div style={{ position: 'relative' }}>
@@ -393,9 +399,7 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
                   <label>Date</label>
                   <input
                     type="date"
-                    value={new Date(currentDate.getFullYear(), currentDate.getMonth(), selectedDay || 1)
-                      .toISOString()
-                      .split('T')[0]}
+                    value={getDateInputValue(currentDate.getFullYear(), currentDate.getMonth(), selectedDay || 1)}
                     onChange={(e) => {
                       const selected = new Date(e.target.value);
                       setSelectedDay(selected.getDate());
