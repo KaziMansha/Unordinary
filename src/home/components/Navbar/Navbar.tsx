@@ -1,4 +1,3 @@
-// src/components/NavBar.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 import classes from './Navbar.module.css';
@@ -13,6 +12,7 @@ export function NavBar() {
         </Link>
       </div>
       <ul className={classes.navLinks}>
+        <li><Link to="/">Home</Link></li>
         <li><Link to="/about">About</Link></li>
       </ul>
       <div className={classes.authButtons}>

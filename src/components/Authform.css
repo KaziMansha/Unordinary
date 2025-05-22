@@ -34,7 +34,7 @@
 }
 .mantine-Input-input:focus, .mantine-PasswordInput-innerInput:focus {
   outline: none !important;
-  border-color: #646cff !important; /* highlight on focus */
+  border-color: #646cff !important;
 }
 
 .auth-form-buttons {
