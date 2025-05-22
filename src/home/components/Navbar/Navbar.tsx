@@ -36,9 +36,16 @@ export function NavBar() {
         <li><Link to="/">Home</Link></li>
         <li><Link to="/about">About</Link></li>
       </ul>
-      <div className={classes.authButtons}>
+      <div className={classes.authButtons}> 
+          {currentUser ? (
+          <button onClick={handleSignOut} className={classes.login}>Sign Out</button> 
+        ) 
+        : (
+          <>
         <Link to="/login"><button className={classes.login}>Login</button></Link>
         <Link to="/signup"><button className={classes.signup}>Sign Up</button></Link>
+        </>
+        )}
       </div>
     </nav>
   );
