@@ -34,6 +34,10 @@ export function NavBar() {
       </div>
       <ul className={classes.navLinks}>
         <li><Link to="/">Home</Link></li>
+        {currentUser ? (
+          <li><Link to="/dashboard">Dashboard</Link></li>
+        ) :
+        <li><Link to="/login">Dashboard</Link></li>}
         <li><Link to="/about">About</Link></li>
       </ul>
       <div className={classes.authButtons}> 
