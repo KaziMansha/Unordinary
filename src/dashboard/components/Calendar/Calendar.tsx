@@ -182,6 +182,7 @@ export function Calendar({ refreshTrigger }: CalendarProps) {
 
     setShowForm(false);
     setActiveEvent(null);
+    setEditMode(false)
   } catch (error) {
     console.error('Error updating event:', error);
   }
