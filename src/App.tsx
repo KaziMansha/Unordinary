@@ -8,6 +8,7 @@ import HobbySurvey from './dashboard/components/HobbySurvey/HobbySurvey.tsx'; //
 //import HobbySuggestion from './dashboard/components/HobbySuggestion/HobbySuggestion';
 import { FeedbackForm } from './home/components/FeedbackForm/FeedbackForm.tsx';
 import About from './about/About.tsx'
+import EditHobbies from './dashboard/components/HobbySurvey/EditHobbies.tsx'; // Edit hobbies page
 
 function App() {
   return (
@@ -21,7 +22,7 @@ function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/hobbiesurvey" element={<HobbySurvey />} />
           <Route path="/about" element={<About />} />
-          
+          <Route path="/edithobbies" element={<EditHobbies />} />
         </Routes>
       </BrowserRouter>
     </MantineProvider>

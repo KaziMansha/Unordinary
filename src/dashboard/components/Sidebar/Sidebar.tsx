@@ -232,7 +232,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onEventAdded }) => {
       <div className="sidebar-suggestions">
         <button
           className="suggestions-button"
-          onClick={() => navigate('/hobbiesurvey')}
+          onClick={() => navigate('/edithobbies')}
         >
           Edit Hobby
         </button>

@@ -198,6 +198,43 @@ app.get('/api/hobbies', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+app.delete('/api/hobbies/:id', async (req: Request, res: Response): Promise<void> => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) { 
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  const idToken = authHeader.split('Bearer ')[1];
+  try {
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    const firebaseUid = decoded.uid;
+
+    const userRes = await pool.query('SELECT id FROM users WHERE firebase_uid = $1', [firebaseUid]);
+    if (userRes.rowCount === 0) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    const userId = userRes.rows[0].id;
+    const hobbyId = req.params.id;
+
+    const deleteRes = await pool.query(
+      'DELETE FROM hobbies WHERE id = $1 AND user_id = $2 RETURNING *',
+      [hobbyId, userId]
+    );
+
+    if (deleteRes.rowCount === 0) {
+      res.status(404).json({ error: 'Hobby not found or unauthorized' });
+      return;
+    }
+
+    res.status(200).json({ message: 'Hobby deleted' });
+  } catch (err) {
+    console.error('Error deleting hobby:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
 /*
 -----------------------------------------------------------Handles AI!!! AND generates hobby.-----------------------------------------------------------

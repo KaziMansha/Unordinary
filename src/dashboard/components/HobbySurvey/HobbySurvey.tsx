@@ -17,11 +17,17 @@ const HobbySurvey: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+     const hasDuplicate = hobbies.some(
+      (h, idx, arr) =>
+        arr.findIndex(x => x.hobby.toLowerCase().trim() === h.hobby.toLowerCase().trim()) !== idx
+    );
+    if (hasDuplicate) {
+      alert('You have duplicate hobbies.');
+      return;
+    }
     try {
       const user = auth.currentUser;
       if (!user) throw new Error("User not authenticated");
-      
       // Get Firebase ID token
       const idToken = await user.getIdToken();
   
